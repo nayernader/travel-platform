@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Types } from 'mongoose';
+import { HydratedDocument, Types, Schema as MongooseSchema } from 'mongoose';
 import { Role } from '../../common/enums/role.enum';
 import { UserStatus } from '../../common/enums/user-status.enum';
 
@@ -31,8 +31,8 @@ export class User {
   @Prop({ type: String, enum: Object.values(UserStatus), default: UserStatus.ACTIVE })
   status: UserStatus;
 
-  // ACC-13: a moderator is linked to exactly one hotel or airline
-  @Prop({ type: Types.ObjectId })
+    // ACC-13: a moderator is linked to exactly one hotel or airline
+  @Prop({ type: MongooseSchema.Types.ObjectId })
   providerId?: Types.ObjectId;
 
   // ACC-05: lockout after 5 failed logins for 15 minutes
