@@ -7,6 +7,7 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { AuditModule } from './audit/audit.module';
+import { ReferenceDataModule } from './reference-data/reference-data.module';
 
 @Module({
   imports: [
@@ -28,6 +29,8 @@ import { AuditModule } from './audit/audit.module';
     NotificationsModule,
 
     AuditModule,
+
+    ReferenceDataModule,
   ],
   controllers: [AppController],
   providers: [AppService],
