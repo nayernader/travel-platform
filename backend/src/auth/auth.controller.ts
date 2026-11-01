@@ -1,0 +1,53 @@
+import { Body, Controller, Get, HttpCode, Post, Req, Res } from '@nestjs/common';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import type { Request, Response } from 'express';
+import type { UserDocument } from '../users/schemas/user.schema';
+import { UsersService } from '../users/users.service';
+import { AuthService } from './auth.service';
+import { Auth } from './decorators/auth.decorator';
+import { CurrentUser } from './decorators/current-user.decorator';
+import { LoginDto } from './dto/login.dto';
+import { RegisterDto } from './dto/register.dto';
+
+@ApiTags('Auth')
+@Controller('auth')
+export class AuthController {
+  constructor(
+    private readonly auth: AuthService,
+    private readonly users: UsersService,
+  ) {}
+
+  @Post('register')
+  @ApiOperation({ summary: 'Register a new traveler account', description: 'ACC-01' })
+  register(@Body() dto: RegisterDto) {
+    return this.auth.register(dto);
+  }
+
+  @Post('login')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Log in (sets httpOnly cookies)', description: 'ACC-04, ACC-05, ACC-19' })
+  login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
+    return this.auth.login(dto, res);
+  }
+
+  @Post('refresh')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Get a new access token from the refresh cookie', description: 'ACC-06' })
+  refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    return this.auth.refresh(req, res);
+  }
+
+  @Post('logout')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Log out and revoke the refresh token', description: 'ACC-06' })
+  logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    return this.auth.logout(req, res);
+  }
+
+  @Get('me')
+  @Auth()
+  @ApiOperation({ summary: 'Current logged-in user', description: 'ACC-04, ACC-11, ACC-19' })
+  me(@CurrentUser() user: UserDocument) {
+    return this.users.toResponse(user);
+  }
+}
