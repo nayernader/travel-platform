@@ -1,12 +1,15 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { NestExpressApplication } from '@nestjs/platform-express';   // NEW
+import { join } from 'path';                                         // NEW
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  // CHANGED: typed as an Express app, and rawBody keeps the exact request bytes (Stripe webhook signature)
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, { rawBody: true });
 
   // Every route starts with /api
   app.setGlobalPrefix('api');
@@ -28,6 +31,9 @@ async function bootstrap() {
 
   // Lets the Next.js frontend (port 3000) send cookies to this API
   app.enableCors({ origin: 'http://localhost:3000', credentials: true });
+
+  // Serves uploaded images at /uploads/... (GEN-08)                    // NEW
+  app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads/' }); // NEW
 
   // Swagger docs at /api/docs
   const config = new DocumentBuilder()

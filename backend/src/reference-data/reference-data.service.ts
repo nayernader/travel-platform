@@ -35,4 +35,14 @@ export class ReferenceDataService {
   findAirport(iata: string) {
     return this.airports.findById(iata.toUpperCase());
   }
+
+    // Used by other modules to read one city
+  findCity(id: string) {
+    return this.cities.findById(id);
+  }
+
+  // Used by other modules to read one country
+  findCountry(id: string) {
+    return this.countries.findById(id);
+  }
 }

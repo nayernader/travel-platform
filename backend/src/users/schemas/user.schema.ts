@@ -31,9 +31,13 @@ export class User {
   @Prop({ type: String, enum: Object.values(UserStatus), default: UserStatus.ACTIVE })
   status: UserStatus;
 
-    // ACC-13: a moderator is linked to exactly one hotel or airline
+  // ACC-13: a moderator is linked to exactly one hotel or airline
   @Prop({ type: MongooseSchema.Types.ObjectId })
   providerId?: Types.ObjectId;
+
+  // ACC-12: the real name is kept here when the account is deactivated and the name becomes 'Deleted user'   // NEW
+  @Prop({ type: String })                                                                                     // NEW
+  originalName?: string;                                                                                      // NEW
 
   // ACC-05: lockout after 5 failed logins for 15 minutes
   @Prop({ type: Number, default: 0 })

@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
+import { ScheduleModule } from '@nestjs/schedule';            // NEW
+import { EventEmitterModule } from '@nestjs/event-emitter';   // NEW
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
@@ -30,6 +32,9 @@ import { BlogModule } from './blog/blog.module';
         uri: config.get<string>('MONGODB_URI'),
       }),
     }),
+
+    ScheduleModule.forRoot(),       // NEW: cron jobs (hold expiry, flight departed, daily exchange rates)
+    EventEmitterModule.forRoot(),   // NEW: events (booking.refund.requested)
 
     UsersModule,
 
