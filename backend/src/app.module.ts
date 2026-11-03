@@ -19,6 +19,8 @@ import { HotelBookingsModule } from './hotel-bookings/hotel-bookings.module';
 import { PaymentsModule } from './payments/payments.module';
 import { ItinerariesModule } from './itineraries/itineraries.module';
 import { BlogModule } from './blog/blog.module';
+import { UploadsModule } from './uploads/uploads.module';
+
 
 @Module({
   imports: [
@@ -43,6 +45,8 @@ import { BlogModule } from './blog/blog.module';
     NotificationsModule,
 
     AuditModule,
+
+    UploadsModule,
 
     ReferenceDataModule,
 
