@@ -1,4 +1,5 @@
 import {
+  BadRequestException,   // NEW
   ConflictException,
   ForbiddenException,
   HttpException,
@@ -23,6 +24,7 @@ import {
 import { UserStatus } from '../common/enums/user-status.enum';
 import type { UserDocument } from '../users/schemas/user.schema';
 import { UsersService } from '../users/users.service';
+import { ChangePasswordDto } from './dto/change-password.dto'; // NEW
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 
@@ -88,6 +90,23 @@ export class AuthService {
     await this.issueTokens(user, res, true);
     return { user: this.users.toResponse(user) };
   }
+
+  // ACC-08: change my password with the current one. Also finishes a temporary-password login (ACC-07a, ACC-13). // NEW
+  async changePassword(user: UserDocument, dto: ChangePasswordDto, res: Response) { // NEW
+    const full = await this.users.findById(user.id); // NEW
+    if (!full) throw new UnauthorizedException('Session is no longer valid'); // NEW
+    if (!(await bcrypt.compare(dto.currentPassword, full.passwordHash))) { // NEW
+      throw new BadRequestException('Current password is incorrect'); // NEW
+    } // NEW
+    if (await bcrypt.compare(dto.newPassword, full.passwordHash)) { // NEW
+      throw new BadRequestException('New password must be different from the current one'); // NEW
+    } // NEW
+    const passwordHash = await bcrypt.hash(dto.newPassword, 10); // GEN-13: salted hash // NEW
+    await this.users.updateById(user.id, { $set: { passwordHash, mustChangePassword: false } }); // NEW
+    // New cookies: the refresh token hash is replaced, so older refresh tokens stop working, while this session continues // NEW
+    await this.issueTokens(full, res, false); // NEW
+    return { changed: true }; // NEW
+  } // NEW
 
   // Issues a new access token from the refresh cookie
   async refresh(req: Request, res: Response) {

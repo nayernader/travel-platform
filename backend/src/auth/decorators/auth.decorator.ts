@@ -16,6 +16,5 @@ export function Auth(...roles: Role[]) {
     UseGuards(JwtAuthGuard, RolesGuard),
     ApiCookieAuth('access_token'),
     ApiUnauthorizedResponse({ description: 'Not logged in or session expired' }),
-    ApiForbiddenResponse({ description: 'Your role is not allowed to do this' }),
-  );
+    ApiForbiddenResponse({ description: 'Your role is not allowed, the account is suspended, or a temporary password must be changed first (PASSWORD_CHANGE_REQUIRED)' }),  );
 }
