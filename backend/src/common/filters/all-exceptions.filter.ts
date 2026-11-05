@@ -20,6 +20,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let message: string | string[] = 'Internal server error';
     let error = 'Internal Server Error';
+    let code: string | undefined; // NEW: optional machine-readable code, e.g. PASSWORD_CHANGE_REQUIRED
 
     if (exception instanceof HttpException) {
       // Errors we throw on purpose (NotFoundException, validation, etc.)
@@ -32,6 +33,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
         const b = body as Record<string, unknown>;
         message = (b.message as string | string[]) ?? exception.message;
         error = (b.error as string) ?? exception.name;
+        if (typeof b.code === 'string') code = b.code; // NEW
       }
     } else if ((exception as { code?: number })?.code === 11000) {
       // MongoDB duplicate key (for example, an email that already exists)
@@ -51,6 +53,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     response.status(status).json({
       statusCode: status,
       error,
+      ...(code ? { code } : {}), // NEW: only present when the error has a code
       message,
       path: request.url,
       timestamp: new Date().toISOString(),
