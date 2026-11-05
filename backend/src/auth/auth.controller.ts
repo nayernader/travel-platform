@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Post, Req, Res } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Patch, Post, Req, Res } from '@nestjs/common'; // NEW: Patch
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import type { UserDocument } from '../users/schemas/user.schema';
@@ -6,6 +6,7 @@ import { UsersService } from '../users/users.service';
 import { AuthService } from './auth.service';
 import { Auth } from './decorators/auth.decorator';
 import { CurrentUser } from './decorators/current-user.decorator';
+import { ChangePasswordDto } from './dto/change-password.dto'; // NEW
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 
@@ -49,5 +50,17 @@ export class AuthController {
   @ApiOperation({ summary: 'Current logged-in user', description: 'ACC-04, ACC-11, ACC-19' })
   me(@CurrentUser() user: UserDocument) {
     return this.users.toResponse(user);
+  }
+
+  // NEW: ACC-08 change my password (also finishes a temporary-password login, ACC-07a / ACC-13)
+  @Patch('change-password')
+  @Auth()
+  @ApiOperation({ summary: 'Change my password with the current one', description: 'ACC-08, ACC-07a, ACC-13' })
+  changePassword(
+    @CurrentUser() user: UserDocument,
+    @Body() dto: ChangePasswordDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    return this.auth.changePassword(user, dto, res);
   }
 }
