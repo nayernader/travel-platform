@@ -9,3 +9,28 @@ Prompt:
 How the output was used:
 (explain how you used the answer)
 ================================================
+==================================================
+Date: 2026-11-05
+Member: Member 1 (Team leader)
+Branch: feature/ACC-08-09-change-password-profile
+Requirements: ACC-08, ACC-09, ACC-07a, ACC-13
+Tool: Claude (AI assistant)
+
+What I asked:
+- Step-by-step help adding change password (current password check, new password rules),
+  edit profile (name, phone, preferred currency) with validation, and blocking all routes
+  until a temporary password is changed.
+
+What the AI produced:
+- ChangePasswordDto and UpdateProfileDto, AuthService.changePassword,
+  UsersService.updateProfile, a new UsersController (GET/PATCH /api/users/me),
+  an @AllowTemporaryPassword() decorator and a check in JwtAuthGuard,
+  and a change to AllExceptionsFilter so error responses keep a "code" field.
+
+What I did myself:
+- Adapted the code to our existing files, fixed a file created in the wrong folder,
+  tested every case in Swagger (wrong current password, weak password, same password,
+  invalid phone/currency, role injection rejected, 403 PASSWORD_CHANGE_REQUIRED),
+  and reviewed each commit before pushing.
+
+No secrets (connection string, JWT secrets, passwords, API keys) were shared with the AI.
