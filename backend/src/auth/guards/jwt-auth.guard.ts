@@ -6,12 +6,14 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Reflector } from '@nestjs/core'; // NEW
 import { JwtService } from '@nestjs/jwt';
 import type { Request } from 'express';
 import { ACCESS_COOKIE, INACTIVITY_LIMIT_MS } from '../../common/constants/auth.constants';
 import { UserStatus } from '../../common/enums/user-status.enum';
 import type { UserDocument } from '../../users/schemas/user.schema';
 import { UsersService } from '../../users/users.service';
+import { ALLOW_TEMP_PASSWORD_KEY } from '../decorators/allow-temporary-password.decorator'; // NEW
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
@@ -19,6 +21,7 @@ export class JwtAuthGuard implements CanActivate {
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
     private readonly users: UsersService,
+    private readonly reflector: Reflector, // NEW
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -54,6 +57,23 @@ export class JwtAuthGuard implements CanActivate {
     }
     if (!last || now - last > 60_000) {
       await this.users.updateById(user.id, { lastActivityAt: new Date(now) });
+    }
+
+    // NEW: ACC-07a, ACC-13. A temporary password must be changed before anything else.
+    // Only routes marked with @AllowTemporaryPassword() are let through.
+    if (user.mustChangePassword) {
+      const allowed = this.reflector.getAllAndOverride<boolean>(ALLOW_TEMP_PASSWORD_KEY, [
+        context.getHandler(),
+        context.getClass(),
+      ]);
+      if (!allowed) {
+        throw new ForbiddenException({
+          statusCode: 403,
+          error: 'Forbidden',
+          code: 'PASSWORD_CHANGE_REQUIRED',
+          message: 'You must change your temporary password first',
+        });
+      }
     }
 
     req.user = user;
