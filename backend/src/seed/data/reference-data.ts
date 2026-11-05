@@ -17,9 +17,10 @@ export const CITIES = [
   { _id: 'paris', name: 'Paris', countryCode: 'FR' },
   { _id: 'tokyo', name: 'Tokyo', countryCode: 'JP' },
   { _id: 'riyadh', name: 'Riyadh', countryCode: 'SA' },
+  { _id: 'frankfurt', name: 'Frankfurt', countryCode: 'DE' },   // NEW
 ];
 
-// The IANA time zones are not in the provided file, so they are added here (FLT-02)
+// Each airport includes its IANA time zone, as in the official Airports.csv (FLT-02)
 export const AIRPORTS = [
   { _id: 'CAI', name: 'Cairo International Airport', cityId: 'cairo', countryCode: 'EG', timezone: 'Africa/Cairo' },
   { _id: 'DXB', name: 'Dubai International Airport', cityId: 'dubai', countryCode: 'AE', timezone: 'Asia/Dubai' },
@@ -28,6 +29,7 @@ export const AIRPORTS = [
   { _id: 'CDG', name: 'Charles de Gaulle Airport', cityId: 'paris', countryCode: 'FR', timezone: 'Europe/Paris' },
   { _id: 'HND', name: 'Haneda Airport', cityId: 'tokyo', countryCode: 'JP', timezone: 'Asia/Tokyo' },
   { _id: 'RUH', name: 'King Khalid International Airport', cityId: 'riyadh', countryCode: 'SA', timezone: 'Asia/Riyadh' },
+  { _id: 'FRA', name: 'Frankfurt Airport', cityId: 'frankfurt', countryCode: 'DE', timezone: 'Europe/Berlin' },   // NEW
 ];
 
 export const ATTRACTIONS = [
@@ -38,4 +40,5 @@ export const ATTRACTIONS = [
   { _id: 'att-5', name: 'Louvre Museum', cityId: 'paris' },
   { _id: 'att-6', name: 'Senso-ji Temple', cityId: 'tokyo' },
   { _id: 'att-7', name: 'Kingdom Centre Tower (Sky Bridge)', cityId: 'riyadh' },
+  { _id: 'att-8', name: 'Römerberg', cityId: 'frankfurt' },   // NEW
 ];
