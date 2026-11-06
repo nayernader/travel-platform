@@ -82,3 +82,29 @@ What I did myself:
   and the build still works.
 
 No secrets (connection string, JWT secrets, passwords, API keys) were shared with the AI.
+
+==================================================
+Date: 2026-11-06
+Member: Member 1 (Team leader)
+Branch: feature/ACC-12-self-deactivation
+Requirements: ACC-12
+Tool: Claude (AI assistant)
+
+What I asked:
+- Self-deactivation that must be refused when the user has future Confirmed bookings,
+  even though the booking modules (Members 3 and 5) are not built yet.
+
+What the AI produced:
+- An event contract (common/events/user-deactivation.event.ts): booking modules answer
+  USER_DEACTIVATION_CHECK with their count of future Confirmed bookings.
+- UsersService.deactivateSelf (password check, admins refused, 409 HAS_FUTURE_BOOKINGS,
+  status DEACTIVATED, refresh token revoked), PATCH /api/users/me/deactivate (clears cookies),
+  DeactivateAccountDto, 4 unit tests with a fake booking module, and a fix for the
+  Mongoose "new" option deprecation (returnDocument: 'after').
+
+What I did myself:
+- Ran npm test (13 pass) and tested in Swagger: consent needed on register, 400 wrong/empty
+  password, 200 deactivation, 401 afterwards, login refused, 403 for admin, data kept in Atlas.
+  Recovered users.service.ts after an accidental undo and re-ran all tests.
+
+No secrets (connection string, JWT secrets, passwords, API keys) were shared with the AI.
