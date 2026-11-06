@@ -58,3 +58,27 @@ What I did myself:
   403 PASSWORD_CHANGE_REQUIRED until changed, notification and audit log created.
 
 No secrets (connection string, JWT secrets, passwords, API keys) were shared with the AI.
+
+==================================================
+Date: 2026-11-06
+Member: Member 1 (Team leader)
+Branch: feature/ACC-11-ownership-helper
+Requirements: ACC-11
+Tool: Claude (AI assistant)
+
+What I asked:
+- A shared helper so every member checks record ownership the same way, with unit tests.
+
+What the AI produced:
+- common/utils/ownership.ts (toIdString, sameId, assertOwnership: 404 for missing or
+  someone else's record, optional admin access), ownership.spec.ts (8 Jest tests),
+  and the Jest setup fix for TypeScript 6 and the Nest 12 ES-module packages
+  (tsconfig.spec.json with rootDir, ts-jest pointed at it, npm test scripts run Node
+  with --experimental-vm-modules).
+
+What I did myself:
+- Ran the tests, found each setup error (TS5011, then "Must use import to load ES Module"),
+  checked my Node and Jest versions, applied the fixes, and confirmed all 9 tests pass
+  and the build still works.
+
+No secrets (connection string, JWT secrets, passwords, API keys) were shared with the AI.
