@@ -1,17 +1,17 @@
 import {
   BadRequestException,
-  ConflictException, // NEW
-  ForbiddenException, // NEW
+  ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { EventEmitter2 } from '@nestjs/event-emitter'; // NEW
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectModel } from '@nestjs/mongoose';
-import * as bcrypt from 'bcrypt'; // NEW
+import * as bcrypt from 'bcrypt';
 import { Model, UpdateQuery } from 'mongoose';
-import { Role } from '../common/enums/role.enum'; // NEW
-import { UserStatus } from '../common/enums/user-status.enum'; // NEW
-import { USER_DEACTIVATION_CHECK } from '../common/events/user-deactivation.event'; // NEW
+import { Role } from '../common/enums/role.enum';
+import { UserStatus } from '../common/enums/user-status.enum';
+import { USER_DEACTIVATION_CHECK } from '../common/events/user-deactivation.event';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { User, UserDocument } from './schemas/user.schema';
 
@@ -19,7 +19,7 @@ import { User, UserDocument } from './schemas/user.schema';
 export class UsersService {
   constructor(
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
-    private readonly events: EventEmitter2, // NEW
+    private readonly events: EventEmitter2,
   ) {}
 
   create(data: Partial<User>) {
@@ -35,7 +35,8 @@ export class UsersService {
   }
 
   updateById(id: string, update: UpdateQuery<UserDocument>) {
-    return this.userModel.findByIdAndUpdate(id, update, { new: true });
+    // returnDocument: 'after' returns the updated document ('new: true' is deprecated in Mongoose)
+    return this.userModel.findByIdAndUpdate(id, update, { returnDocument: 'after' });
   }
 
   // ACC-09. Only name, phone and preferredCurrency can be changed here.
@@ -55,7 +56,7 @@ export class UsersService {
     return this.toResponse(updated);
   }
 
-  // NEW: ACC-12. A user deactivates their own account. The data is kept; login is no longer possible.
+  // ACC-12. A user deactivates their own account. The data is kept; login is no longer possible.
   async deactivateSelf(userId: string, password: string) {
     const user = await this.findById(userId);
     if (!user) throw new NotFoundException('User not found');

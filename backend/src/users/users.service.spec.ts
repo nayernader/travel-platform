@@ -30,7 +30,7 @@ describe('UsersService.deactivateSelf (ACC-12)', () => {
     expect(model.findByIdAndUpdate).toHaveBeenCalledWith(
       'u1',
       { $set: { status: UserStatus.DEACTIVATED }, $unset: { refreshTokenHash: 1 } },
-      { new: true },
+      { returnDocument: 'after' },
     );
   });
 
