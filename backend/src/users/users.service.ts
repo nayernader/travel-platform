@@ -1,12 +1,26 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'; // NEW: two exceptions
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectModel } from '@nestjs/mongoose';
+import * as bcrypt from 'bcrypt';
 import { Model, UpdateQuery } from 'mongoose';
-import { UpdateProfileDto } from './dto/update-profile.dto'; // NEW
+import { Role } from '../common/enums/role.enum';
+import { UserStatus } from '../common/enums/user-status.enum';
+import { USER_DEACTIVATION_CHECK } from '../common/events/user-deactivation.event';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 import { User, UserDocument } from './schemas/user.schema';
 
 @Injectable()
 export class UsersService {
-  constructor(@InjectModel(User.name) private readonly userModel: Model<UserDocument>) {}
+  constructor(
+    @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
+    private readonly events: EventEmitter2,
+  ) {}
 
   create(data: Partial<User>) {
     return this.userModel.create(data);
@@ -21,10 +35,11 @@ export class UsersService {
   }
 
   updateById(id: string, update: UpdateQuery<UserDocument>) {
-    return this.userModel.findByIdAndUpdate(id, update, { new: true });
+    // returnDocument: 'after' returns the updated document ('new: true' is deprecated in Mongoose)
+    return this.userModel.findByIdAndUpdate(id, update, { returnDocument: 'after' });
   }
 
-  // NEW: ACC-09. Only name, phone and preferredCurrency can be changed here.
+  // ACC-09. Only name, phone and preferredCurrency can be changed here.
   // Email, role and status are never read from the request body.
   async updateProfile(id: string, dto: UpdateProfileDto) {
     const changes: Record<string, string> = {};
@@ -39,6 +54,39 @@ export class UsersService {
     const updated = await this.updateById(id, { $set: changes });
     if (!updated) throw new NotFoundException('User not found');
     return this.toResponse(updated);
+  }
+
+  // ACC-12. A user deactivates their own account. The data is kept; login is no longer possible.
+  async deactivateSelf(userId: string, password: string) {
+    const user = await this.findById(userId);
+    if (!user) throw new NotFoundException('User not found');
+
+    // An admin deactivating themselves could leave the platform without an admin
+    if (user.role === Role.ADMIN) {
+      throw new ForbiddenException('Admin accounts cannot be deactivated this way');
+    }
+
+    if (!(await bcrypt.compare(password, user.passwordHash))) {
+      throw new BadRequestException('Password is incorrect');
+    }
+
+    // Ask the booking modules how many future Confirmed bookings this user has (see user-deactivation.event.ts)
+    const answers = await this.events.emitAsync(USER_DEACTIVATION_CHECK, { userId: user.id });
+    const blocking = answers.reduce<number>((sum, n) => sum + (typeof n === 'number' ? n : 0), 0);
+    if (blocking > 0) {
+      throw new ConflictException({
+        statusCode: 409,
+        error: 'Conflict',
+        code: 'HAS_FUTURE_BOOKINGS',
+        message: `You have ${blocking} upcoming confirmed booking(s). Cancel them before deactivating your account.`,
+      });
+    }
+
+    await this.updateById(user.id, {
+      $set: { status: UserStatus.DEACTIVATED },
+      $unset: { refreshTokenHash: 1 }, // logged out everywhere
+    });
+    return { deactivated: true };
   }
 
   // The only shape of a user that may leave the backend (never the hash or tokens)
