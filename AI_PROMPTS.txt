@@ -80,7 +80,7 @@ Date: 2026-11-08
 Member: Member 3
 Branch: feature/FLT-11-15-17-flight-search
 Requirements: FLT-15 (price filter and sorting), FLT-12 part (c) (cabin class filter)
-Tool: Claude (AI assistant)
+Tool: Claude 
 
 What I asked:
 - Step-by-step help adding the price range filter, sorting by price, duration or
@@ -102,5 +102,29 @@ What I did myself:
   min > max error).
 - Noticed that the sorting had no ascending/descending option and that the cabin
   class filter did nothing, and asked for both to be fixed.
+
+==================================================
+Date: 2026-11-08
+Member: Member 3
+Branch: feature/FLT-11-15-17-flight-search
+Requirements: FLT-17 (flight details)
+Tool: Claude 
+What I asked:
+- Help extending GET /api/flights/:id so that it shows the airline, the duration and
+  the airline's cancellation policy, as FLT-17 requires.
+- Help understanding why the cancellation policy is not saved (the airline schema
+  does not declare cancellationPolicy and baggagePolicy). Member 2 (Ahmed) will
+  fix the schema.
+
+What the AI produced:
+- The changes to findOneView(): loading the airline, calculating the duration
+  in minutes from the UTC times, and returning airlineName, airlineCode and
+  cancellationPolicy.
+- The diagnosis of the schema problem and the exact fields that are missing.
+
+What I did myself:
+- Typed in and adapted the AI's code, tested GET /api/flights/:id in Swagger with
+  my test flights, and checked the result against the requirement text.
+- Reported the schema problem to Member 2, who will add the fields.
 
 No secrets (connection string, JWT secrets, passwords, API keys) were shared with the AI.
