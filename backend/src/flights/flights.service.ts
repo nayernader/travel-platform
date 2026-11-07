@@ -99,12 +99,24 @@ export class FlightsService {
     }
   }
 
-  async findOneView(id: string) {
+   async findOneView(id: string) {
     const flight = await this.model.findById(id);
     if (!flight) throw new NotFoundException('Flight not found');
     const dep = await this.ref.findAirport(flight.departureAirport);
     const arr = await this.ref.findAirport(flight.arrivalAirport);
-    return toFlightView(flight, dep, arr);
+
+    const airline = await this.airlineModel.findById(flight.airline).lean();
+    const durationMinutes = Math.round(
+      (flight.arrivalTimeUtc.getTime() - flight.departureTimeUtc.getTime()) / 60000,
+    );
+
+    return {
+      ...toFlightView(flight, dep, arr),
+      durationMinutes,
+      airlineName: airline?.name ?? null,
+      airlineCode: airline?.code ?? null,
+      cancellationPolicy: (airline as any)?.cancellationPolicy ?? [],
+    };
   }
 
   // ---------------- FLT-04: cabins ----------------
