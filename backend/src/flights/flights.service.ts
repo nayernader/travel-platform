@@ -12,9 +12,9 @@ import { DateTime } from 'luxon';
 
 import { Flight, FlightDocument, FlightStatus } from './schemas/flight.schema';
 import { CreateFlightDto } from './dto/create-flight.dto';
+import { CreateCabinDto } from './dto/cabin.dto';
 import { toFlightView } from './flight.view';
 
-// Shared files from the leader (adjust the paths if yours differ)
 import { ReferenceDataService } from '../reference-data/reference-data.service';
 import { UserDocument } from '../users/schemas/user.schema';
 
@@ -30,7 +30,6 @@ export class FlightsService {
     if (!user.providerId) {
       throw new ForbiddenException('No airline is assigned to your account');
     }
-    // cast: User.providerId is Types.ObjectId, Flight.airline is Schema.Types.ObjectId
     return user.providerId as unknown as MongooseSchema.Types.ObjectId;
   }
 
@@ -48,10 +47,10 @@ export class FlightsService {
     return dt;
   }
 
+  // ---------------- FLT-03: create flight ----------------
   async create(user: UserDocument, dto: CreateFlightDto) {
     const airline = this.requireAirline(user);
 
-    // normalise codes so "cai" and "CAI" behave the same
     const depCode = dto.departureAirport.toUpperCase();
     const arrCode = dto.arrivalAirport.toUpperCase();
 
@@ -68,7 +67,6 @@ export class FlightsService {
     const departureTimeUtc = depLocal.toUTC().toJSDate();
     const arrivalTimeUtc = arrLocal.toUTC().toJSDate();
 
-    // comparisons are done in UTC (FLT-03)
     if (arrivalTimeUtc <= departureTimeUtc) {
       throw new BadRequestException('Arrival must be after departure');
     }
@@ -105,7 +103,31 @@ export class FlightsService {
     return toFlightView(flight, dep, arr);
   }
 
-  /** FLT-30: flights whose departure time has passed become DEPARTED. */
+  // ---------------- FLT-04: cabins ----------------
+  /** Loads a flight and checks that it belongs to the moderator's airline. */
+  async getOwned(user: UserDocument, id: string) {
+    const flight = await this.model.findById(id);
+    if (!flight) throw new NotFoundException('Flight not found');
+    if (!user.providerId || flight.airline.toString() !== user.providerId.toString()) {
+      throw new ForbiddenException('This flight belongs to another airline');
+    }
+    return flight;
+  }
+
+  async addCabin(user: UserDocument, id: string, dto: CreateCabinDto) {
+    const flight = await this.getOwned(user, id);
+    if (flight.status !== FlightStatus.SCHEDULED) {
+      throw new BadRequestException('Only Scheduled flights can be edited');
+    }
+    if (flight.cabins.some((c) => c.cabinClass === dto.cabinClass)) {
+      throw new ConflictException(`${dto.cabinClass} already exists on this flight`);
+    }
+    flight.cabins.push({ ...dto, availableSeats: dto.totalSeats } as any);
+    await flight.save();
+    return flight;
+  }
+
+  // ---------------- FLT-30: auto Departed ----------------
   @Cron(CronExpression.EVERY_MINUTE)
   async markDeparted() {
     await this.model.updateMany(
