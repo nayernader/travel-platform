@@ -17,9 +17,9 @@ import { toFlightView } from './flight.view';
 
 import { ReferenceDataService } from '../reference-data/reference-data.service';
 import { UserDocument } from '../users/schemas/user.schema';
-import { SearchFlightsDto } from './dto/search-flights.dto';
 import { Airline, AirlineDocument } from '../airlines/schemas/airline.schema';
 import { buildPage, getSkip, PAGE_SIZE } from '../common/utils/pagination';
+import { FlightSortBy, SearchFlightsDto, SortOrder } from './dto/search-flights.dto';
 
 @Injectable()
 export class FlightsService {
@@ -159,8 +159,13 @@ export class FlightsService {
 
 
         // ACC-15: flights of deactivated airlines are hidden
-   const activeAirlines = await this.airlineModel.find({ isActive: true }).select('_id').lean();
+    const activeAirlines = await this.airlineModel.find({ isActive: true }).select('_id').lean();
     const activeIds = activeAirlines.map((a) => a._id);
+
+    const cabinMatch: Record<string, any> = { availableSeats: { $gte: q.passengers } };
+    if (q.cabinClass) cabinMatch.cabinClass = q.cabinClass;
+    if (q.minPrice !== undefined) cabinMatch.price = { ...cabinMatch.price, $gte: q.minPrice };
+    if (q.maxPrice !== undefined) cabinMatch.price = { ...cabinMatch.price, $lte: q.maxPrice };
 
     const filter: Record<string, any> = {
       status: FlightStatus.SCHEDULED,
@@ -169,20 +174,43 @@ export class FlightsService {
       departureDate: q.date,
       departureTimeUtc: { $gt: new Date() },
       airline: { $in: activeIds },
-      cabins: { $elemMatch: { availableSeats: { $gte: q.passengers } } },
+      cabins: { $elemMatch: cabinMatch },
     };
 
-    const total = await this.model.countDocuments(filter);
-    const flights = await this.model
-      .find(filter)
-      .sort({ departureTimeUtc: 1 })
-      .skip(getSkip(q.page))
-      .limit(PAGE_SIZE)
-      .lean();
+        const flights = await this.model.find(filter).lean();
 
-    const items = flights.map((f) => toFlightView(f, dep, arr));
-    const result = buildPage(items, total, q.page);
-    return total === 0 ? { ...result, message: 'No flights found' } : result;
-     
+    const cabinOk = (c: any) =>
+      c.availableSeats >= q.passengers &&  
+      (!q.cabinClass || c.cabinClass === q.cabinClass) &&
+      (q.minPrice === undefined || c.price >= q.minPrice) &&
+      (q.maxPrice === undefined || c.price <= q.maxPrice);
+
+    const rows = flights.map((f) => {
+      const cabins = f.cabins.filter(cabinOk);
+      return {
+        ...f,
+        cabins,
+        fromPrice: Math.min(...cabins.map((c) => c.price)),
+        durationMinutes: Math.round(
+          (f.arrivalTimeUtc.getTime() - f.departureTimeUtc.getTime()) / 60000,
+        ),
+      };
+    });
+
+    const sortValue = (r: (typeof rows)[number]) =>
+      q.sortBy === FlightSortBy.PRICE
+        ? r.fromPrice
+        : q.sortBy === FlightSortBy.DURATION
+          ? r.durationMinutes
+          : r.departureTimeUtc.getTime();
+
+    const direction = q.sortOrder === SortOrder.DESC ? -1 : 1;
+    rows.sort((a, b) => direction * (sortValue(a) - sortValue(b)));
+
+    const start = getSkip(q.page);
+    const items = rows.slice(start, start + PAGE_SIZE).map((r) => toFlightView(r, dep, arr));
+
+    const result = buildPage(items, rows.length, q.page);
+    return rows.length === 0 ? { ...result, message: 'No flights found' } : result;
   }
 }

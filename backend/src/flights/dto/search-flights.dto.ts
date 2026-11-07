@@ -10,6 +10,10 @@ export enum FlightSortBy {
   DURATION = 'duration',
   DEPARTURE_TIME = 'departureTime',
 }
+export enum SortOrder {
+  ASC = 'ascending',
+  DESC = 'descending',
+}
 
 export class SearchFlightsDto extends PaginationQueryDto {
   @ApiProperty({ example: 'CAI' })
@@ -59,4 +63,9 @@ export class SearchFlightsDto extends PaginationQueryDto {
   @IsOptional()
   @IsEnum(FlightSortBy)
   sortBy: FlightSortBy = FlightSortBy.DEPARTURE_TIME;
+
+  @ApiPropertyOptional({ enum: SortOrder, default: SortOrder.ASC })
+  @IsOptional()
+  @IsEnum(SortOrder)
+  sortOrder: SortOrder = SortOrder.ASC;
 }
