@@ -4,6 +4,7 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AirlinesService } from './airlines.service';
 import { CreateAirlineDto, UpdateAirlineDto } from './dto/create-airline.dto';
 import { BaggagePolicyDto } from './dto/baggage-policy.dto';
+import { CancellationPolicyDto } from './dto/cancellation-policy.dto';
 
 import { Auth } from '../auth/decorators/auth.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -48,5 +49,16 @@ export class AirlinesController {
     @Body() dto: BaggagePolicyDto,
   ) {
     return this.airlines.setBaggagePolicy(user, id, dto);
+  }
+
+  @Auth(Role.AIRLINE_MODERATOR)
+  @Put(':id/cancellation-policy')
+  @ApiOperation({ summary: 'Replace my airline cancellation tiers (FLT-09)' })
+  setCancellation(
+    @CurrentUser() user: UserDocument,
+    @Param('id') id: string,
+    @Body() dto: CancellationPolicyDto,
+  ) {
+    return this.airlines.setCancellationPolicy(user, id, dto);
   }
 }
