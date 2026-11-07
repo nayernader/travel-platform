@@ -17,11 +17,15 @@ import { toFlightView } from './flight.view';
 
 import { ReferenceDataService } from '../reference-data/reference-data.service';
 import { UserDocument } from '../users/schemas/user.schema';
+import { SearchFlightsDto } from './dto/search-flights.dto';
+import { Airline, AirlineDocument } from '../airlines/schemas/airline.schema';
+import { buildPage, getSkip, PAGE_SIZE } from '../common/utils/pagination';
 
 @Injectable()
 export class FlightsService {
   constructor(
     @InjectModel(Flight.name) private model: Model<FlightDocument>,
+    @InjectModel(Airline.name) private airlineModel: Model<AirlineDocument>,
     private readonly ref: ReferenceDataService,
   ) {}
 
@@ -134,5 +138,51 @@ export class FlightsService {
       { status: FlightStatus.SCHEDULED, departureTimeUtc: { $lte: new Date() } },
       { status: FlightStatus.DEPARTED },
     );
+  }
+
+  // ---------------- FLT-11: Search ----------------
+  async search(q: SearchFlightsDto){
+
+      if (q.departureAirport === q.arrivalAirport) {
+      throw new BadRequestException('Departure and arrival airports must differ');
+    }
+      if (q.minPrice !== undefined && q.maxPrice !== undefined && q.minPrice > q.maxPrice) {
+      throw new BadRequestException('Minimum price cannot be greater than maximum price');
+    }
+
+    const dep = await this.ref.findAirport(q.departureAirport);
+    const arr = await this.ref.findAirport(q.arrivalAirport);
+    if (!dep || !arr) {
+      throw new BadRequestException('Unknown airport code');
+    }
+
+
+
+        // ACC-15: flights of deactivated airlines are hidden
+   const activeAirlines = await this.airlineModel.find({ isActive: true }).select('_id').lean();
+    const activeIds = activeAirlines.map((a) => a._id);
+
+    const filter: Record<string, any> = {
+      status: FlightStatus.SCHEDULED,
+      departureAirport: q.departureAirport,
+      arrivalAirport: q.arrivalAirport,
+      departureDate: q.date,
+      departureTimeUtc: { $gt: new Date() },
+      airline: { $in: activeIds },
+      cabins: { $elemMatch: { availableSeats: { $gte: q.passengers } } },
+    };
+
+    const total = await this.model.countDocuments(filter);
+    const flights = await this.model
+      .find(filter)
+      .sort({ departureTimeUtc: 1 })
+      .skip(getSkip(q.page))
+      .limit(PAGE_SIZE)
+      .lean();
+
+    const items = flights.map((f) => toFlightView(f, dep, arr));
+    const result = buildPage(items, total, q.page);
+    return total === 0 ? { ...result, message: 'No flights found' } : result;
+     
   }
 }
