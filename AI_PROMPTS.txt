@@ -36,3 +36,43 @@ What I did myself:
 No secrets (connection string, JWT secrets, passwords, API keys) were shared with the AI.
 
 
+
+
+
+==================================================
+Date: 2026-11-08
+Member: Member 3
+Branch: feature/FLT-11-15-17-flight-search
+Requirements: FLT-11 (search by route, local date, passengers, pagination)
+Tool: Claude 
+
+What I asked:
+- Help understanding Member 2's flight and airline code, and what FLT-11 requires.
+- Step-by-step help writing GET /api/flights/search, one small step at a time,
+  so that I could understand the code.
+- Help with a TypeScript error on the query filter (two different ObjectId types).
+- Help finding why PUT /api/airlines/:id/cancellation-policy returned 200 but the
+  policy was not in the response (airline.schema.ts does not declare the field;
+  I will report it to Member 2).
+
+What the AI produced:
+- An explanation of the existing code and a plan in steps.
+- The SearchFlightsDto (query parameters and validation).
+- The controller route and the service method for search, written step by step:
+  the input checks (same airport, price range, unknown airport), the query for
+  active airlines, Scheduled flights, local date and free seats ($elemMatch),
+  the pagination code, the "No flights found" message, and the fix for the
+  filter typing error (building the filter as a plain object).
+- Corrections to my drafts (my first controller method was missing the method
+  declaration, and my first airport check did not look the airport up).
+
+What I did myself:
+- Created the branch and the test data (a moderator linked to a test airline,
+  three flights and their cabins).
+- Wrote first drafts of the controller route and the airport check, which the AI
+  corrected; typed in the AI's code in our files, adapted it (imports, module,
+  constructor) and fixed the compile errors that came up.
+- Tested the search in Swagger with my test data and reviewed each step
+  before committing.
+
+No secrets (connection string, JWT secrets, passwords, API keys) were shared with the AI.
