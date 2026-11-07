@@ -1,10 +1,16 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 
 import { Airline, AirlineDocument } from './schemas/airline.schema';
 import { CreateAirlineDto, UpdateAirlineDto } from './dto/create-airline.dto';
 import { BaggagePolicyDto } from './dto/baggage-policy.dto';
+import { CancellationPolicyDto } from './dto/cancellation-policy.dto';
 
 import { Role } from '../common/enums/role.enum';
 import { UserDocument } from '../users/schemas/user.schema';
@@ -47,6 +53,22 @@ export class AirlinesService {
     const airline = await this.model.findByIdAndUpdate(
       id,
       { baggagePolicy: dto },
+      { returnDocument: 'after', runValidators: true },
+    );
+    if (!airline) throw new NotFoundException('Airline not found');
+    return airline;
+  }
+
+  // ---------------- FLT-09: cancellation tiers ----------------
+  async setCancellationPolicy(user: UserDocument, id: string, dto: CancellationPolicyDto) {
+    this.assertCanManage(user, id);
+    const days = dto.tiers.map((t) => t.daysBefore);
+    if (new Set(days).size !== days.length) {
+      throw new BadRequestException('Each days-before value must be unique');
+    }
+    const airline = await this.model.findByIdAndUpdate(
+      id,
+      { cancellationPolicy: dto.tiers },
       { returnDocument: 'after', runValidators: true },
     );
     if (!airline) throw new NotFoundException('Airline not found');
