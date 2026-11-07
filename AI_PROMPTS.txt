@@ -75,4 +75,32 @@ What I did myself:
 - Tested the search in Swagger with my test data and reviewed each step
   before committing.
 
+==================================================
+Date: 2026-11-08
+Member: Member 3
+Branch: feature/FLT-11-15-17-flight-search
+Requirements: FLT-15 (price filter and sorting), FLT-12 part (c) (cabin class filter)
+Tool: Claude (AI assistant)
+
+What I asked:
+- Step-by-step help adding the price range filter, sorting by price, duration or
+  departure time, and a cabin class filter to the flight search.
+
+What the AI produced:
+- The price range rule (inclusive), written once as a MongoDB filter and once as a
+  JavaScript function that keeps only the matching cabins in each result.
+- The sorting code: fromPrice (cheapest matching cabin) and durationMinutes, with
+  sorting and pagination done in JavaScript.
+- The sortOrder (ascending/descending) addition, after I pointed out it was missing.
+- The cabin class filter lines, after I found in Swagger that the filter was ignored.
+- Help finding a duplicate import that stopped the server from reloading.
+
+What I did myself:
+- Typed in and adapted the AI's code in our files, removed the duplicate import,
+  renamed the sort order values to ascending/descending, and tested each step in
+  Swagger with my own test flights (price range, cabin class, sorting, and the
+  min > max error).
+- Noticed that the sorting had no ascending/descending option and that the cabin
+  class filter did nothing, and asked for both to be fixed.
+
 No secrets (connection string, JWT secrets, passwords, API keys) were shared with the AI.
