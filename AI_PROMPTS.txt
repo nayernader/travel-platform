@@ -127,4 +127,28 @@ What I did myself:
   my test flights, and checked the result against the requirement text.
 - Reported the schema problem to Member 2, who will add the fields.
 
+==================================================
+Date: 2026-11-08
+Member: Member 3
+Branch: feature/FLT-19-21-passengers-summary
+Requirements: FLT-19 (passenger details and extra baggage), FLT-21 (booking summary before payment), FLT-12 part (b) (passenger types)
+Tool: Claude
+
+What I asked:
+- Help choosing the endpoints for this branch from the university PDF (POST /api/flight-bookings for the summary, the seat hold in a later branch).
+- Help designing the booking schema, the request DTO and the controller, and how to validate passengers by date of birth and type.
+- Step-by-step help writing the summary: flight checks, seat check, price (infants pay 10 percent), extra baggage rules and fee.
+- Help understanding the git merge with develop and why the baggage policy was missing from the airline response.
+
+What the AI produced:
+- Corrections to my schema and DTO drafts (reference fields as ObjectId, the passenger and segment DTOs, the uppercase transform for the passenger type).
+- The service code for age and type checks, loading and checking the flights (status, departed, deactivated airline, cabin, return after arrival), seat check (409), price calculation, baggage rules (maximum bags, weight, infants) and the baggage fee.
+- The case-insensitive cabinClass transform in the booking DTO.
+- The Swagger test cases with request bodies and expected responses, and the git commands for the commit and the merge with develop.
+
+What I did myself:
+- Chose the endpoint split from the PDF, wrote first drafts of the schema and DTO, wired the controller and the module, and typed in and adapted the AI's service code.
+- Set the airline baggage policy as a moderator and tested every case in Swagger with my own test flights (prices, passenger types, flight errors, baggage rules, access errors).
+- Resolved the merge with develop and checked that only the booking files were committed.
+
 No secrets (connection string, JWT secrets, passwords, API keys) were shared with the AI.

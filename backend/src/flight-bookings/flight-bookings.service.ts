@@ -93,6 +93,44 @@ export class FlightBookingsService {
     return loaded;
   }
 
+  /** FLT-19: extra bags per passenger, up to the airline's maximum; returns the total baggage fee. */
+  private async baggageFee(
+    loaded: { flight: any; cabin: any }[],
+    passengers: { fullName: string; type: string; extraBags?: number; extraBagWeightKg?: number }[],
+  ): Promise<number> {
+    let fee = 0;
+    for (const { flight, cabin } of loaded) {
+      const airline = await this.airlineModel
+        .findById(flight.airline)
+        .select('baggagePolicy')
+        .lean();
+      const policy = airline?.baggagePolicy;
+      for (const p of passengers) {
+        const bags = p.extraBags ?? 0;
+        if (bags === 0) continue;
+        if (p.type === 'INFANT') {
+          throw new BadRequestException(`${p.fullName} is an infant and cannot have extra bags`);
+        }
+        if (!policy) {
+          throw new BadRequestException(`Flight ${flight.flightNumber} does not sell extra bags`);
+        }
+        if (bags > policy.maxExtraBags) {
+          throw new BadRequestException(
+            `Passengers can bring at most ${policy.maxExtraBags} extra bags on flight ${flight.flightNumber}`,
+          );
+        }
+        if ((p.extraBagWeightKg ?? 0) > cabin.maxBagWeightKg) {
+          throw new BadRequestException(
+            `Each extra bag on flight ${flight.flightNumber} can weigh at most ${cabin.maxBagWeightKg} kg`,
+          );
+        }
+        fee += bags * policy.pricePerExtraBag;
+      }
+    }
+    return fee;
+  }
+
+  /** FLT-19, FLT-21: validates the booking and returns the summary. Reserves nothing. */
   async summarize(dto: BookingRequestDto) {
     const loaded = await this.loadSegments(dto.segments);
 
@@ -107,7 +145,8 @@ export class FlightBookingsService {
         );
       }
     }
-        const round = (n: number) => Math.round(n * 100) / 100;
+
+    const round = (n: number) => Math.round(n * 100) / 100;
 
     const segments = loaded.map(({ flight, cabin }) => ({
       flightId: flight.id,
@@ -120,9 +159,16 @@ export class FlightBookingsService {
       subtotal: round(cabin.price * seats + cabin.price * INFANT_FARE_RATE * counts.infants),
     }));
 
-    const baggageFee = 0; // added once the airline's baggage policy is saved (Ahmed's fix)
+    const baggageFee = round(await this.baggageFee(loaded, dto.passengers));
     const total = round(segments.reduce((sum, s) => sum + s.subtotal, 0) + baggageFee);
 
-    return { ...counts, seats, segments, baggageFee, total, currency: 'USD' };
+    const passengers = dto.passengers.map((p) => ({
+      fullName: p.fullName,
+      type: p.type,
+      extraBags: p.extraBags ?? 0,
+      extraBagWeightKg: p.extraBagWeightKg ?? 0,
+    }));
+
+    return { ...counts, seats, passengers, segments, baggageFee, total, currency: 'USD' };
   }
 }
