@@ -1,8 +1,9 @@
-import { Body, Controller, Get, Param, Post, StreamableFile } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, StreamableFile, Query } from '@nestjs/common';
 import { ApiOperation, ApiProduces, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { FlightBookingsService } from './flight-bookings.service';
 import { BookingRequestDto } from './dto/booking.dto';
+import { ListBookingsQueryDto} from './dto/list-bookings-query.dto';
 
 import { Auth } from '../auth/decorators/auth.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -49,6 +50,51 @@ export class FlightBookingsController {
   }
 
   @Auth(Role.USER)
+    @Auth(Role.USER)
+  @Get()
+  @ApiOperation({
+    summary: 'My flight bookings: upcoming, past or cancelled (10 per page)',
+    description:
+      'FLT-25, GEN-05. group=upcoming (confirmed, not departed), past (completed or departed), cancelled. Soonest first for upcoming, newest first otherwise.',
+  })
+  @ApiResponse({ status: 200, description: 'Page of my bookings with flights, passengers, cabin and status' })
+  @ApiResponse({ status: 400, description: 'Invalid group or page' })
+  @ApiResponse({ status: 401, description: 'Not logged in' })
+  @ApiResponse({ status: 403, description: 'Only registered users have bookings' })
+  findMine(@Query() query: ListBookingsQueryDto, @CurrentUser() user: UserDocument) {
+    return this.bookings.findMine(user.id, query);
+  }
+
+  @Auth(Role.USER)
+  @Get(':id/refund-preview')
+  @ApiOperation({
+    summary: 'See the refund before cancelling',
+    description: 'FLT-26. Uses the airline cancellation tiers and the days left before the outbound flight. Changes nothing.',
+  })
+  @ApiResponse({ status: 200, description: 'daysRemaining, refundPercent and refundAmount' })
+  @ApiResponse({ status: 401, description: 'Not logged in' })
+  @ApiResponse({ status: 403, description: 'Only registered users' })
+  @ApiResponse({ status: 404, description: 'Booking not found (or not yours)' })
+  @ApiResponse({ status: 409, description: 'Booking is not confirmed or the flight has departed' })
+  refundPreview(@Param('id') id: string, @CurrentUser() user: UserDocument) {
+    return this.bookings.refundPreview(id, user.id);
+  }
+
+  @Auth(Role.USER)
+  @Post(':id/cancel')
+  @ApiOperation({
+    summary: 'Cancel my confirmed booking before departure',
+    description:
+      'FLT-26, PAY-03. Refund follows the airline tiers. Seats are returned and a refund request is sent to payments.',
+  })
+  @ApiResponse({ status: 201, description: 'Booking CANCELLED with refundPercent and refundAmount' })
+  @ApiResponse({ status: 401, description: 'Not logged in' })
+  @ApiResponse({ status: 403, description: 'Only registered users' })
+  @ApiResponse({ status: 404, description: 'Booking not found (or not yours)' })
+  @ApiResponse({ status: 409, description: 'Booking is not confirmed or the flight has departed' })
+  cancel(@Param('id') id: string, @CurrentUser() user: UserDocument) {
+    return this.bookings.cancel(id, user.id);
+  }
   @Get(':id')
   @ApiOperation({
     summary: 'One of my flight bookings with its flights (confirmation page)',

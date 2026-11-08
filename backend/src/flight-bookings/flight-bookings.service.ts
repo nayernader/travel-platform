@@ -31,10 +31,20 @@ import {
   FlightStatus,
 } from '../flights/schemas/flight.schema';
 import { Airline, AirlineDocument } from '../airlines/schemas/airline.schema';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { BookingGroup, ListBookingsQueryDto } from './dto/list-bookings-query.dto';
+import { refundPercentFor, Tier } from '../airlines/cancellation.util';
+import { CancelledBy } from './schemas/flight-booking.schema'; // add to the existing schema import
+import {
+  BOOKING_REFUND_REQUESTED,
+  BookingRefundRequestedEvent,
+} from '../common/events/booking-refund-requested.event';
 
 const INFANT_FARE_RATE = 0.1; // FLT-12(b): infants pay 10% of the fare and take no seat
 const HOLD_MINUTES = 10; // FLT-22: seats are held for 10 minutes while the user pays
 const FLIGHT_FIELDS = 'flightNumber departureAirport arrivalAirport departureTimeUtc arrivalTimeUtc';
+const PAGE_SIZE = 10; // GEN-05. ASSUMPTION: replace with the shared PAGE_SIZE/getSkip/buildPage helpers
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 @Injectable()
 export class FlightBookingsService {
@@ -43,6 +53,7 @@ export class FlightBookingsService {
     @InjectModel(Airline.name) private airlineModel: Model<AirlineDocument>,
     @InjectModel(FlightBooking.name) private bookingModel: Model<FlightBookingDocument>,
     private readonly notifications: NotificationsService,
+    private readonly events: EventEmitter2,
   ) {}
 
   /** Age in whole years on the given day. */
@@ -418,6 +429,179 @@ export class FlightBookingsService {
 
   /** FLT-22, GEN-11: every minute, expired holds become EXPIRED and their seats are released. */
   @Cron(CronExpression.EVERY_MINUTE)
+    /** FLT-25: my bookings for one group (upcoming / past / cancelled), 10 per page. */
+  async findMine(userId: string, query: ListBookingsQueryDto) {
+    const now = new Date();
+    const group = query.group ?? BookingGroup.UPCOMING;
+    const page = query.page ?? 1;
+
+    const groupMatch: Record<string, unknown> =
+      group === BookingGroup.UPCOMING
+        ? { status: BookingStatus.CONFIRMED, 'outbound.departureTimeUtc': { $gt: now } }
+        : group === BookingGroup.PAST
+          ? {
+              $or: [
+                { status: BookingStatus.COMPLETED },
+                { status: BookingStatus.CONFIRMED, 'outbound.departureTimeUtc': { $lte: now } },
+              ],
+            }
+          : { status: BookingStatus.CANCELLED };
+
+    // upcoming: soonest first; past and cancelled: most recent first
+    const sortDir = group === BookingGroup.UPCOMING ? 1 : -1;
+
+    // segments[0] is always the outbound flight
+    const [res] = await this.bookingModel.aggregate([
+      {
+        $match: {
+          user: new Types.ObjectId(userId),
+          status: { $in: [BookingStatus.CONFIRMED, BookingStatus.COMPLETED, BookingStatus.CANCELLED] },
+        },
+      },
+      { $addFields: { outboundId: { $arrayElemAt: ['$segments.flight', 0] } } },
+      { $lookup: { from: 'flights', localField: 'outboundId', foreignField: '_id', as: 'outbound' } },
+      { $unwind: '$outbound' },
+      { $match: groupMatch },
+      { $sort: { 'outbound.departureTimeUtc': sortDir, _id: 1 } },
+      {
+        $facet: {
+          ids: [{ $skip: (page - 1) * PAGE_SIZE }, { $limit: PAGE_SIZE }, { $project: { _id: 1 } }],
+          total: [{ $count: 'n' }],
+        },
+      },
+    ]);
+
+    const ids: Types.ObjectId[] = res.ids.map((d: { _id: Types.ObjectId }) => d._id);
+    const total: number = res.total[0]?.n ?? 0;
+
+    const docs = await this.bookingModel
+      .find({ _id: { $in: ids } })
+      .populate('segments.flight', FLIGHT_FIELDS);
+    const byId = new Map(docs.map((d) => [d.id, d]));
+    const items = ids.map((id) => byId.get(id.toString())).filter(Boolean);
+
+    return {
+      group,
+      items,
+      page,
+      pageSize: PAGE_SIZE,
+      total,
+      totalPages: Math.max(1, Math.ceil(total / PAGE_SIZE)),
+    };
+  }
+
+  /** FLT-26: how much would be refunded if the booking were cancelled now. FLT-12(a): outbound tier for the whole booking. */
+  private async buildRefund(booking: FlightBookingDocument) {
+    if (booking.status !== BookingStatus.CONFIRMED) {
+      throw new ConflictException(`A ${booking.status} booking cannot be cancelled`);
+    }
+
+    const outbound = await this.flightModel
+      .findById(booking.segments[0].flight)
+      .select('airline departureTimeUtc')
+      .lean();
+    if (!outbound) throw new NotFoundException('Flight not found');
+    if (outbound.departureTimeUtc <= new Date()) {
+      throw new ConflictException('The flight has already departed and cannot be cancelled');
+    }
+
+    // ASSUMPTION: the airline stores its tiers as cancellationPolicy.tiers [{ daysBefore, refundPercent }]
+    const airline = await this.airlineModel.findById(outbound.airline).select('cancellationPolicy').lean();
+    const tiers: Tier[] = (airline as any)?.cancellationPolicy?.tiers ?? [];
+
+    const daysRemaining = Math.floor((outbound.departureTimeUtc.getTime() - Date.now()) / DAY_MS);
+    const refundPercent = refundPercentFor(tiers, daysRemaining);
+    const refundAmount = Math.round(booking.totalPrice * refundPercent) / 100;
+
+    return { daysRemaining, refundPercent, refundAmount };
+  }
+
+  /** FLT-26: loads my booking (owner only, not even admins) for cancel and preview. */
+  private async loadOwn(bookingId: string, userId: string) {
+    return assertOwnership<FlightBookingDocument>(
+      Types.ObjectId.isValid(bookingId) ? await this.bookingModel.findById(bookingId) : null,
+      (b) => b.user,
+      { id: userId, role: Role.USER },
+      { notFoundMessage: 'Booking not found' },
+    );
+  }
+
+  /** FLT-26: refund shown to the user BEFORE they confirm the cancellation. */
+  async refundPreview(bookingId: string, userId: string) {
+    const booking = await this.loadOwn(bookingId, userId);
+    const refund = await this.buildRefund(booking);
+    return {
+      bookingId: booking.id,
+      reference: booking.reference,
+      totalPrice: booking.totalPrice,
+      currency: booking.currency,
+      ...refund,
+    };
+  }
+
+  /** FLT-26: the user cancels their own booking. */
+  async cancel(bookingId: string, userId: string) {
+    const booking = await this.loadOwn(bookingId, userId);
+    return this.applyCancellation(booking.id, CancelledBy.USER);
+  }
+
+  /**
+   * FLT-26 / PAY-03: THE cancellation. Refund by tier, status change, seats back, refund event, notification.
+   * Member 6 can call this too. Safe against double calls: changeStatus only works from CONFIRMED.
+   */
+  async applyCancellation(bookingId: string, cancelledBy: CancelledBy = CancelledBy.USER) {
+    const current = await this.bookingModel.findById(bookingId);
+    if (!current) throw new NotFoundException('Booking not found');
+
+    const refund = await this.buildRefund(current); // 409 if not CONFIRMED or already departed
+
+    const booking = await this.changeStatus(bookingId, BookingStatus.CANCELLED, {
+      cancelledBy,
+      refundPercent: refund.refundPercent,
+      cancelledAt: new Date(),
+    });
+    if (!booking) throw new ConflictException('This booking can no longer be cancelled');
+
+    for (const s of booking.segments) {
+      await this.returnSeats(s.flight.toString(), s.cabinClass, booking.seats);
+    }
+
+    if (booking.paymentId && refund.refundAmount > 0) {
+      this.events.emit(
+        BOOKING_REFUND_REQUESTED,
+        new BookingRefundRequestedEvent(booking.id, booking.paymentId, refund.refundAmount, booking.currency),
+      );
+    }
+
+    await this.notifications.notify(
+      booking.user,
+      NotificationType.BOOKING_CANCELLED, // ASSUMPTION: this enum value exists
+      `Your flight booking ${booking.reference} was cancelled. Refund: ${refund.refundAmount} ${booking.currency} (${refund.refundPercent}%).`,
+      { bookingId: booking.id, reference: booking.reference },
+    );
+
+    return {
+      bookingId: booking.id,
+      reference: booking.reference,
+      status: booking.status,
+      refundPercent: refund.refundPercent,
+      refundAmount: refund.refundAmount,
+      currency: booking.currency,
+    };
+  }
+
+  /** GEN-11: every hour, CONFIRMED bookings whose LAST flight has departed become COMPLETED. */
+  @Cron(CronExpression.EVERY_HOUR)
+  async completeFinished(): Promise<void> {
+    const due = await this.bookingModel.aggregate([
+      { $match: { status: BookingStatus.CONFIRMED } },
+      { $lookup: { from: 'flights', localField: 'segments.flight', foreignField: '_id', as: 'f' } },
+      { $addFields: { lastDeparture: { $max: '$f.departureTimeUtc' } } },
+      { $match: { lastDeparture: { $lte: new Date() } } },
+      { $project: { _id: 1 } },
+    ]);
+    for (const { _id } of due) await this.changeStatus(_id, BookingStatus.COMPLETED);
+  }
   async expireHolds(): Promise<void> {
     const now = new Date();
     const due = await this.bookingModel

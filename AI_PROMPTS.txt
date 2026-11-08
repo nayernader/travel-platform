@@ -195,3 +195,19 @@ What I did myself:
 - Typed in and adapted the code, tested hold, confirm, the second payment attempt, booking details, the e-ticket download, the notification and the error cases in Swagger, and removed the temporary route.
 
 No secrets (connection string, JWT secrets, passwords, API keys) were shared with the AI.
+
+================================================
+Date: 2026-11-08
+Student: Ahmed Hossam
+Tool: Claude
+Related Requirement: FLT-25, FLT-26
+Prompt:
+Using my existing flight-bookings service, write the "my bookings" list
+(upcoming, past, cancelled, 10 per page) and the cancel booking feature
+with a refund preview based on the airline cancellation tiers.
+
+How the output was used:
+Used the suggested list query, refund preview, cancel method and refund
+event as a base. I reviewed it, tested it in Swagger, and adjusted it to
+match the project code.
+================================================
