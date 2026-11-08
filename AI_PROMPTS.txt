@@ -175,4 +175,23 @@ What I did myself:
 - Tested the hold in Swagger and Compass: booking created as PENDING_PAYMENT with a 10-minute hold, seats taken, second hold on the last seat refused (409), expired holds set to EXPIRED with seats returned.
 - Ran the unit test and the race test (5 requests for 1 seat: exactly one 201, four 409, no overbooking).
 
+==================================================
+Date: 2026-11-08
+Member: Member 3
+Branch: feature/FLT-23-confirm-booking
+Requirements: FLT-23 (confirm after payment, booking reference, notification, e-ticket)
+Tool: Claude
+
+What I asked:
+- Help building the confirmation step for Member 6's payment webhook (getPayable, markPaid), the unique booking reference, the in-app notification, the booking details endpoint and the e-ticket PDF.
+
+What the AI produced:
+- getPayable (owner only, still pending, hold not expired) and markPaid (atomic change to CONFIRMED through the GEN-11 helper, unique reference with retry, payment id stored, hold cleared, safe if the webhook is sent twice).
+- The confirmation notification, GET /api/flight-bookings/:id and the e-ticket PDF with pdfkit.
+- The fix for the TypeScript "possibly null" errors in the ownership check.
+- A temporary test route to confirm a booking without Stripe, which I removed before committing.
+
+What I did myself:
+- Typed in and adapted the code, tested hold, confirm, the second payment attempt, booking details, the e-ticket download, the notification and the error cases in Swagger, and removed the temporary route.
+
 No secrets (connection string, JWT secrets, passwords, API keys) were shared with the AI.
