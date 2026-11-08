@@ -7,13 +7,16 @@ import { FlightsController } from './flights.controller';
 
 import { AirlinesModule } from '../airlines/airlines.module';
 
-// Needed so FlightsService can inject ReferenceDataService.
-// Importing it is harmless even if that module is already global.
+import { FlightBooking, FlightBookingSchema } from '../flight-bookings/schemas/flight-booking.schema';
+
 import { ReferenceDataModule } from '../reference-data/reference-data.module';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: Flight.name, schema: FlightSchema }]),
+    MongooseModule.forFeature([
+      { name: Flight.name, schema: FlightSchema },
+      { name: FlightBooking.name, schema: FlightBookingSchema },
+    ]),
     ReferenceDataModule,
     AirlinesModule,
   ],
