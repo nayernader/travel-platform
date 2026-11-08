@@ -6,8 +6,9 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { DateTime } from 'luxon';
+import { allowedFrom } from './booking-status.util';
 
 import { BookingRequestDto, PassengerDto, SegmentDto } from './dto/booking.dto';
 import {
@@ -284,6 +285,20 @@ export class FlightBookingsService {
     };
   }
 
+      /** GEN-11: changes the status atomically, only from an allowed previous status. Returns null if the change is not allowed now. */
+     private async changeStatus(
+       bookingId: Types.ObjectId | string,
+       to: BookingStatus,
+       extra: Record<string, unknown> = {},
+     ) {
+       return this.bookingModel.findOneAndUpdate(
+         { _id: bookingId, status: { $in: allowedFrom(to) } },
+         { $set: { status: to, ...extra } },
+         { returnDocument: 'after' },
+       );
+     }
+
+
   /** FLT-22: checks everything, takes the seats atomically and creates a Pending Payment booking held for 10 minutes. */
   async hold(dto: BookingRequestDto, userId: string) {
     const summary = await this.summarize(dto); // all checks and the price, no writes
@@ -339,11 +354,7 @@ export class FlightBookingsService {
 
     for (const { _id } of due) {
       // atomic: only expire it if it is STILL pending (a payment may have just confirmed it)
-      const booking = await this.bookingModel.findOneAndUpdate(
-        { _id, status: BookingStatus.PENDING_PAYMENT },
-        { $set: { status: BookingStatus.EXPIRED } },
-        {  returnDocument: 'after' },
-      );
+               const booking = await this.changeStatus(_id, BookingStatus.EXPIRED);
       if (!booking) continue; // already confirmed or expired elsewhere
 
       for (const s of booking.segments) {
