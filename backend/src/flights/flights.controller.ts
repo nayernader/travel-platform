@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { FlightsService } from './flights.service';
@@ -9,6 +9,7 @@ import { Auth } from '../auth/decorators/auth.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Role } from '../common/enums/role.enum';
 import type { UserDocument } from '../users/schemas/user.schema';
+import { SearchFlightsDto } from './dto/search-flights.dto';
 
 @ApiTags('Flights')
 @Controller('flights')
@@ -37,6 +38,12 @@ export class FlightsController {
 
   // Member 3 will add GET /flights/search ABOVE this route.
   // Keep ":id" routes at the bottom, otherwise "search" is read as an id.
+  @Get('search')
+  @ApiOperation({ summary: 'Search flights by route, local date and passengers',
+    description: 'FLT-11, FLT-15', })
+  search(@Query()query: SearchFlightsDto) {
+    return this.flights.search(query);
+  }
   @Get(':id')
   @ApiOperation({ summary: 'Flight details with local times (FLT-17 uses this)' })
   findOne(@Param('id') id: string) {
