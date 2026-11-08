@@ -64,12 +64,14 @@ export class FlightsController {
     return this.flights.cancel(user, id);
   }
 
-  // Keep ":id" routes at the bottom, otherwise "search" is read as an id.
   @Get('search')
   @ApiOperation({
-    summary: 'Search flights by route, local date and passengers',
-    description: 'FLT-11, FLT-15',
+    summary: 'Search one-way or round-trip flights by route, local date and passengers',
+    description:
+      'FLT-11, FLT-12(a), FLT-15. Without returnDate: a page of flights. With returnDate: { outbound, return }, each a page with the same filters, sorting and pagination.',
   })
+  @ApiResponse({ status: 200, description: 'One-way: a page of flights. Round trip: { outbound, return }' })
+  @ApiResponse({ status: 400, description: 'Invalid input, same airports, unknown airport, or returnDate before date' })
   search(@Query() query: SearchFlightsDto) {
     return this.flights.search(query);
   }

@@ -180,7 +180,7 @@ export class FlightsService {
       ...(result ?? { cancelledBookings: 0, expiredHolds: 0 }),
     };
   }
-  
+
   // ---------------- FLT-30: auto Departed ----------------
   @Cron(CronExpression.EVERY_MINUTE)
   async markDeparted() {
@@ -190,8 +190,29 @@ export class FlightsService {
     );
   }
 
-  // ---------------- FLT-11: Search ----------------
-  async search(q: SearchFlightsDto){
+    // ---------------- FLT-11 / FLT-12(a): one-way or round-trip search ----------------
+  async search(q: SearchFlightsDto) {
+    if (!q.returnDate) return this.searchOneWay(q); // one-way: same response as before
+
+    // YYYY-MM-DD strings compare correctly as text
+    if (q.returnDate < q.date) {
+      throw new BadRequestException('Return date cannot be before the departure date');
+    }
+
+    // outbound: A to B on date. return: B to A on returnDate. Same filters, sorting and page for both.
+    const outbound = await this.searchOneWay(q);
+    const ret = await this.searchOneWay({
+      ...q,
+      departureAirport: q.arrivalAirport,
+      arrivalAirport: q.departureAirport,
+      date: q.returnDate,
+    });
+
+    return { outbound, return: ret };
+  }
+  
+  // ---------------- FLT-11: one-way search ----------------
+  private async searchOneWay(q: SearchFlightsDto) {
 
       if (q.departureAirport === q.arrivalAirport) {
       throw new BadRequestException('Departure and arrival airports must differ');
