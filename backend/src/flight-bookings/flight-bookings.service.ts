@@ -4,19 +4,18 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { Model } from 'mongoose';
+import { DateTime } from 'luxon';
+
+import { BookingRequestDto, PassengerDto, SegmentDto } from './dto/booking.dto';
 import {
   FlightBooking,
   FlightBookingDocument,
   PassengerType,
 } from './schemas/flight-booking.schema';
-
 import { BookingStatus } from '../common/enums/booking-status.enum';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { DateTime } from 'luxon';
-
-import { BookingRequestDto, PassengerDto, SegmentDto } from './dto/booking.dto';
-
 import {
   Cabin,
   CabinClass,
@@ -28,9 +27,10 @@ import { Airline, AirlineDocument } from '../airlines/schemas/airline.schema';
 
 const INFANT_FARE_RATE = 0.1; // FLT-12(b): infants pay 10% of the fare and take no seat
 const HOLD_MINUTES = 10; // FLT-22: seats are held for 10 minutes while the user pays
+
 @Injectable()
 export class FlightBookingsService {
-    constructor(
+  constructor(
     @InjectModel(Flight.name) private flightModel: Model<FlightDocument>,
     @InjectModel(Airline.name) private airlineModel: Model<AirlineDocument>,
     @InjectModel(FlightBooking.name) private bookingModel: Model<FlightBookingDocument>,
@@ -128,6 +128,7 @@ export class FlightBookingsService {
     }
     return loaded;
   }
+
   /** FLT-22: takes seats from one cabin in ONE atomic update. Returns false if not enough remain. */
   private async takeSeats(
     flightId: string,
@@ -283,7 +284,7 @@ export class FlightBookingsService {
     };
   }
 
-    /** FLT-22: checks everything, takes the seats atomically and creates a Pending Payment booking held for 10 minutes. */
+  /** FLT-22: checks everything, takes the seats atomically and creates a Pending Payment booking held for 10 minutes. */
   async hold(dto: BookingRequestDto, userId: string) {
     const summary = await this.summarize(dto); // all checks and the price, no writes
 
@@ -324,6 +325,30 @@ export class FlightBookingsService {
         await this.returnSeats(s.flightId, s.cabinClass, summary.seats);
       }
       throw err;
+    }
+  }
+
+  /** FLT-22, GEN-11: every minute, expired holds become EXPIRED and their seats are released. */
+  @Cron(CronExpression.EVERY_MINUTE)
+  async expireHolds(): Promise<void> {
+    const now = new Date();
+    const due = await this.bookingModel
+      .find({ status: BookingStatus.PENDING_PAYMENT, holdExpiresAt: { $lte: now } })
+      .select('_id')
+      .lean();
+
+    for (const { _id } of due) {
+      // atomic: only expire it if it is STILL pending (a payment may have just confirmed it)
+      const booking = await this.bookingModel.findOneAndUpdate(
+        { _id, status: BookingStatus.PENDING_PAYMENT },
+        { $set: { status: BookingStatus.EXPIRED } },
+        {  returnDocument: 'after' },
+      );
+      if (!booking) continue; // already confirmed or expired elsewhere
+
+      for (const s of booking.segments) {
+        await this.returnSeats(s.flight.toString(), s.cabinClass, booking.seats);
+      }
     }
   }
 }
