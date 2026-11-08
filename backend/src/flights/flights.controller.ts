@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiTags, ApiResponse } from '@nestjs/swagger';
 
 import { FlightsService } from './flights.service';
 import { CreateFlightDto } from './dto/create-flight.dto';
@@ -36,14 +36,44 @@ export class FlightsController {
     return this.flights.addCabin(user, id, dto);
   }
 
-  // Member 3 will add GET /flights/search ABOVE this route.
+  @Auth(Role.AIRLINE_MODERATOR)
+  @Post(':id/cancel')
+  @ApiOperation({
+    summary: 'Cancel one of my Scheduled flights',
+    description:
+      'FLT-06. The flight becomes CANCELLED and disappears from search. Confirmed bookings are cancelled with a 100% refund, pending holds are released, and passengers are notified.',
+  })
+  @ApiResponse({ status: 201, description: 'Flight cancelled, with the number of bookings cancelled and holds released' })
+  @ApiResponse({ status: 401, description: 'Not logged in' })
+  @ApiResponse({ status: 403, description: 'Not an airline moderator, or the flight belongs to another airline' })
+  @ApiResponse({ status: 404, description: 'Flight not found' })
+  @ApiResponse({ status: 409, description: 'The flight is not Scheduled (already cancelled or departed)' })
+    @Auth(Role.AIRLINE_MODERATOR)
+  @Post(':id/cancel')
+  @ApiOperation({
+    summary: 'Cancel one of my Scheduled flights',
+    description:
+      'FLT-06. The flight becomes CANCELLED and disappears from search. Confirmed bookings are cancelled with a 100% refund, pending holds are released, and passengers are notified.',
+  })
+  @ApiResponse({ status: 201, description: 'Flight cancelled, with the number of bookings cancelled and holds released' })
+  @ApiResponse({ status: 401, description: 'Not logged in' })
+  @ApiResponse({ status: 403, description: 'Not an airline moderator, or the flight belongs to another airline' })
+  @ApiResponse({ status: 404, description: 'Flight not found' })
+  @ApiResponse({ status: 409, description: 'The flight is not Scheduled (already cancelled or departed)' })
+  cancel(@CurrentUser() user: UserDocument, @Param('id') id: string) {
+    return this.flights.cancel(user, id);
+  }
+
   // Keep ":id" routes at the bottom, otherwise "search" is read as an id.
   @Get('search')
-  @ApiOperation({ summary: 'Search flights by route, local date and passengers',
-    description: 'FLT-11, FLT-15', })
-  search(@Query()query: SearchFlightsDto) {
+  @ApiOperation({
+    summary: 'Search flights by route, local date and passengers',
+    description: 'FLT-11, FLT-15',
+  })
+  search(@Query() query: SearchFlightsDto) {
     return this.flights.search(query);
   }
+
   @Get(':id')
   @ApiOperation({ summary: 'Flight details with local times (FLT-17 uses this)' })
   findOne(@Param('id') id: string) {

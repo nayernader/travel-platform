@@ -21,12 +21,16 @@ import { Airline, AirlineDocument } from '../airlines/schemas/airline.schema';
 import { buildPage, getSkip, PAGE_SIZE } from '../common/utils/pagination';
 import { FlightSortBy, SearchFlightsDto, SortOrder } from './dto/search-flights.dto';
 
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { FLIGHT_CANCELLED, FlightCancelledEvent } from '../common/events/flight-cancelled.event';
+
 @Injectable()
 export class FlightsService {
   constructor(
     @InjectModel(Flight.name) private model: Model<FlightDocument>,
     @InjectModel(Airline.name) private airlineModel: Model<AirlineDocument>,
     private readonly ref: ReferenceDataService,
+    private readonly events: EventEmitter2,
   ) {}
 
   /** The airline always comes from the logged-in moderator, never from the request body. */
@@ -143,6 +147,40 @@ export class FlightsService {
     return flight;
   }
 
+    // ---------------- FLT-06: cancel flight ----------------
+  async cancel(user: UserDocument, id: string) {
+    const flight = await this.getOwned(user, id); // 404 if missing, 403 if another airline's
+
+    // atomic: only a Scheduled flight can be cancelled. New holds stop at once,
+    // because takeSeats() only works on SCHEDULED flights.
+    const cancelled = await this.model.findOneAndUpdate(
+      { _id: flight._id, status: FlightStatus.SCHEDULED },
+      { $set: { status: FlightStatus.CANCELLED } },
+      { returnDocument: 'after' },
+    );
+    if (!cancelled) {
+      throw new ConflictException(`A ${flight.status} flight cannot be cancelled`);
+    }
+
+    // the bookings module cancels the bookings, refunds 100% and notifies the passengers
+    const [result] = await this.events.emitAsync(
+      FLIGHT_CANCELLED,
+      new FlightCancelledEvent(
+        cancelled.id,
+        cancelled.flightNumber,
+        `${cancelled.departureAirport} to ${cancelled.arrivalAirport}`,
+        cancelled.departureTimeUtc,
+      ),
+    );
+
+    return {
+      flightId: cancelled.id,
+      flightNumber: cancelled.flightNumber,
+      status: cancelled.status,
+      ...(result ?? { cancelledBookings: 0, expiredHolds: 0 }),
+    };
+  }
+  
   // ---------------- FLT-30: auto Departed ----------------
   @Cron(CronExpression.EVERY_MINUTE)
   async markDeparted() {

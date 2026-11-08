@@ -211,3 +211,18 @@ Used the suggested list query, refund preview, cancel method and refund
 event as a base. I reviewed it, tested it in Swagger, and adjusted it to
 match the project code.
 ================================================
+
+================================================
+Date: 2026-11-08
+Student: Ahmed Hossam
+Tool: Claude
+Related Requirement: FLT-06
+Prompt:
+Write the moderator "cancel flight" feature using my existing flights and
+flight-bookings services: cancel confirmed bookings with a 100% refund,
+release pending holds and notify the passengers.
+
+How the output was used:
+Used the event-based design to avoid a circular module import and the
+booking handler as a base. I reviewed it and tested it in Swagger.
+================================================
