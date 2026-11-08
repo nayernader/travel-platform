@@ -127,4 +127,87 @@ What I did myself:
   my test flights, and checked the result against the requirement text.
 - Reported the schema problem to Member 2, who will add the fields.
 
+==================================================
+Date: 2026-11-08
+Member: Member 3
+Branch: feature/FLT-19-21-passengers-summary
+Requirements: FLT-19 (passenger details and extra baggage), FLT-21 (booking summary before payment), FLT-12 part (b) (passenger types)
+Tool: Claude
+
+What I asked:
+- Help choosing the endpoints for this branch from the university PDF (POST /api/flight-bookings for the summary, the seat hold in a later branch).
+- Help designing the booking schema, the request DTO and the controller, and how to validate passengers by date of birth and type.
+- Step-by-step help writing the summary: flight checks, seat check, price (infants pay 10 percent), extra baggage rules and fee.
+- Help understanding the git merge with develop and why the baggage policy was missing from the airline response.
+
+What the AI produced:
+- Corrections to my schema and DTO drafts (reference fields as ObjectId, the passenger and segment DTOs, the uppercase transform for the passenger type).
+- The service code for age and type checks, loading and checking the flights (status, departed, deactivated airline, cabin, return after arrival), seat check (409), price calculation, baggage rules (maximum bags, weight, infants) and the baggage fee.
+- The case-insensitive cabinClass transform in the booking DTO.
+- The Swagger test cases with request bodies and expected responses, and the git commands for the commit and the merge with develop.
+
+What I did myself:
+- Chose the endpoint split from the PDF, wrote first drafts of the schema and DTO, wired the controller and the module, and typed in and adapted the AI's service code.
+- Set the airline baggage policy as a moderator and tested every case in Swagger with my own test flights (prices, passenger types, flight errors, baggage rules, access errors).
+- Resolved the merge with develop and checked that only the booking files were committed.
+
+==================================================
+Date: 2026-11-08
+Member: Member 3
+Branch: feature/FLT-22-seat-hold
+Requirements: FLT-22 (atomic seat hold, 10-minute expiry), GEN-11 (booking status lifecycle)
+Tool: Claude
+
+What I asked:
+- Step-by-step help building the seat hold: how to reserve seats atomically when the seats are inside the cabins array, how to undo the first flight of a round trip if the second is full, and how to create the Pending Payment booking.
+- How to expire unpaid holds every minute without returning seats twice if a payment arrives at the same moment.
+- How to enforce the allowed status changes (GEN-11) and how to test the race for the last seat.
+
+What the AI produced:
+- The atomic seat methods (one updateOne with $elemMatch and cabins.$, plus giving seats back), the hold() method and the POST /api/flight-bookings/hold endpoint.
+- The expiry job with @Cron (every minute) and the atomic status change.
+- The GEN-11 transitions table with changeStatus() and its unit test.
+- The race test script (test/race-hold.mjs) and the Swagger and Compass test steps.
+- Fixes for a TypeScript error (cabinClass typed as string instead of CabinClass) and the Mongoose "new" option warning.
+
+What I did myself:
+- Typed in and adapted the AI's code in our files, and fixed the compile and warning issues it pointed out.
+- Tested the hold in Swagger and Compass: booking created as PENDING_PAYMENT with a 10-minute hold, seats taken, second hold on the last seat refused (409), expired holds set to EXPIRED with seats returned.
+- Ran the unit test and the race test (5 requests for 1 seat: exactly one 201, four 409, no overbooking).
+
+==================================================
+Date: 2026-11-08
+Member: Member 3
+Branch: feature/FLT-23-confirm-booking
+Requirements: FLT-23 (confirm after payment, booking reference, notification, e-ticket)
+Tool: Claude
+
+What I asked:
+- Help building the confirmation step for Member 6's payment webhook (getPayable, markPaid), the unique booking reference, the in-app notification, the booking details endpoint and the e-ticket PDF.
+
+What the AI produced:
+- getPayable (owner only, still pending, hold not expired) and markPaid (atomic change to CONFIRMED through the GEN-11 helper, unique reference with retry, payment id stored, hold cleared, safe if the webhook is sent twice).
+- The confirmation notification, GET /api/flight-bookings/:id and the e-ticket PDF with pdfkit.
+- The fix for the TypeScript "possibly null" errors in the ownership check.
+- A temporary test route to confirm a booking without Stripe, which I removed before committing.
+
+What I did myself:
+- Typed in and adapted the code, tested hold, confirm, the second payment attempt, booking details, the e-ticket download, the notification and the error cases in Swagger, and removed the temporary route.
+
 No secrets (connection string, JWT secrets, passwords, API keys) were shared with the AI.
+
+================================================
+Date: 2026-11-08
+Student: Ahmed Hossam
+Tool: Claude
+Related Requirement: FLT-25, FLT-26
+Prompt:
+Using my existing flight-bookings service, write the "my bookings" list
+(upcoming, past, cancelled, 10 per page) and the cancel booking feature
+with a refund preview based on the airline cancellation tiers.
+
+How the output was used:
+Used the suggested list query, refund preview, cancel method and refund
+event as a base. I reviewed it, tested it in Swagger, and adjusted it to
+match the project code.
+================================================
