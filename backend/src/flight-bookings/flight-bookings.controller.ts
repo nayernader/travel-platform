@@ -1,5 +1,5 @@
-import { Body, Controller, Post } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Param, Post, StreamableFile } from '@nestjs/common';
+import { ApiOperation, ApiProduces, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { FlightBookingsService } from './flight-bookings.service';
 import { BookingRequestDto } from './dto/booking.dto';
@@ -46,5 +46,34 @@ export class FlightBookingsController {
   @ApiResponse({ status: 409, description: 'Not enough seats left (someone else was faster)' })
   hold(@Body() dto: BookingRequestDto, @CurrentUser() user: UserDocument) {
     return this.bookings.hold(dto, user.id);
+  }
+
+  @Auth(Role.USER)
+  @Get(':id')
+  @ApiOperation({
+    summary: 'One of my flight bookings with its flights (confirmation page)',
+    description: 'FLT-23, FLT-25',
+  })
+  @ApiResponse({ status: 200, description: 'The booking with reference, status, flights, passengers and total' })
+  @ApiResponse({ status: 401, description: 'Not logged in' })
+  @ApiResponse({ status: 404, description: 'Booking not found (or not yours)' })
+  findOne(@Param('id') id: string, @CurrentUser() user: UserDocument) {
+    return this.bookings.findOne(id, user);
+  }
+
+  @Auth(Role.USER)
+  @Get(':id/e-ticket')
+  @ApiProduces('application/pdf')
+  @ApiOperation({ summary: 'Download the e-ticket (PDF) of a confirmed booking', description: 'FLT-23' })
+  @ApiResponse({ status: 200, description: 'PDF file' })
+  @ApiResponse({ status: 401, description: 'Not logged in' })
+  @ApiResponse({ status: 404, description: 'Booking not found (or not yours)' })
+  @ApiResponse({ status: 409, description: 'The booking is not confirmed' })
+  async eTicket(@Param('id') id: string, @CurrentUser() user: UserDocument) {
+    const { fileName, pdf } = await this.bookings.eTicket(id, user);
+    return new StreamableFile(pdf, {
+      type: 'application/pdf',
+      disposition: `attachment; filename="${fileName}"`,
+    });
   }
 }
