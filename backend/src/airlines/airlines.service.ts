@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { isValidObjectId, Model } from 'mongoose';
 
 import { Airline, AirlineDocument } from './schemas/airline.schema';
 import { CreateAirlineDto, UpdateAirlineDto } from './dto/create-airline.dto';
@@ -24,6 +24,7 @@ export class AirlinesService {
   }
 
   async findOne(id: string) {
+    if (!isValidObjectId(id)) throw new BadRequestException('Invalid airline id');
     const airline = await this.model.findById(id);
     if (!airline) throw new NotFoundException('Airline not found');
     return airline;
@@ -66,9 +67,10 @@ export class AirlinesService {
     if (new Set(days).size !== days.length) {
       throw new BadRequestException('Each days-before value must be unique');
     }
+    const tiers = [...dto.tiers].sort((a, b) => b.daysBefore - a.daysBefore);
     const airline = await this.model.findByIdAndUpdate(
       id,
-      { cancellationPolicy: dto.tiers },
+      { cancellationPolicy: tiers },
       { returnDocument: 'after', runValidators: true },
     );
     if (!airline) throw new NotFoundException('Airline not found');

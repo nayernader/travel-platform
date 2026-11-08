@@ -17,11 +17,15 @@ import { toFlightView } from './flight.view';
 
 import { ReferenceDataService } from '../reference-data/reference-data.service';
 import { UserDocument } from '../users/schemas/user.schema';
+import { Airline, AirlineDocument } from '../airlines/schemas/airline.schema';
+import { buildPage, getSkip, PAGE_SIZE } from '../common/utils/pagination';
+import { FlightSortBy, SearchFlightsDto, SortOrder } from './dto/search-flights.dto';
 
 @Injectable()
 export class FlightsService {
   constructor(
     @InjectModel(Flight.name) private model: Model<FlightDocument>,
+    @InjectModel(Airline.name) private airlineModel: Model<AirlineDocument>,
     private readonly ref: ReferenceDataService,
   ) {}
 
@@ -95,12 +99,24 @@ export class FlightsService {
     }
   }
 
-  async findOneView(id: string) {
+   async findOneView(id: string) {
     const flight = await this.model.findById(id);
     if (!flight) throw new NotFoundException('Flight not found');
     const dep = await this.ref.findAirport(flight.departureAirport);
     const arr = await this.ref.findAirport(flight.arrivalAirport);
-    return toFlightView(flight, dep, arr);
+
+    const airline = await this.airlineModel.findById(flight.airline).lean();
+    const durationMinutes = Math.round(
+      (flight.arrivalTimeUtc.getTime() - flight.departureTimeUtc.getTime()) / 60000,
+    );
+
+    return {
+      ...toFlightView(flight, dep, arr),
+      durationMinutes,
+      airlineName: airline?.name ?? null,
+      airlineCode: airline?.code ?? null,
+      cancellationPolicy: (airline as any)?.cancellationPolicy ?? [],
+    };
   }
 
   // ---------------- FLT-04: cabins ----------------
@@ -134,5 +150,79 @@ export class FlightsService {
       { status: FlightStatus.SCHEDULED, departureTimeUtc: { $lte: new Date() } },
       { status: FlightStatus.DEPARTED },
     );
+  }
+
+  // ---------------- FLT-11: Search ----------------
+  async search(q: SearchFlightsDto){
+
+      if (q.departureAirport === q.arrivalAirport) {
+      throw new BadRequestException('Departure and arrival airports must differ');
+    }
+      if (q.minPrice !== undefined && q.maxPrice !== undefined && q.minPrice > q.maxPrice) {
+      throw new BadRequestException('Minimum price cannot be greater than maximum price');
+    }
+
+    const dep = await this.ref.findAirport(q.departureAirport);
+    const arr = await this.ref.findAirport(q.arrivalAirport);
+    if (!dep || !arr) {
+      throw new BadRequestException('Unknown airport code');
+    }
+
+
+
+        // ACC-15: flights of deactivated airlines are hidden
+    const activeAirlines = await this.airlineModel.find({ isActive: true }).select('_id').lean();
+    const activeIds = activeAirlines.map((a) => a._id);
+
+    const cabinMatch: Record<string, any> = { availableSeats: { $gte: q.passengers } };
+    if (q.cabinClass) cabinMatch.cabinClass = q.cabinClass;
+    if (q.minPrice !== undefined) cabinMatch.price = { ...cabinMatch.price, $gte: q.minPrice };
+    if (q.maxPrice !== undefined) cabinMatch.price = { ...cabinMatch.price, $lte: q.maxPrice };
+
+    const filter: Record<string, any> = {
+      status: FlightStatus.SCHEDULED,
+      departureAirport: q.departureAirport,
+      arrivalAirport: q.arrivalAirport,
+      departureDate: q.date,
+      departureTimeUtc: { $gt: new Date() },
+      airline: { $in: activeIds },
+      cabins: { $elemMatch: cabinMatch },
+    };
+
+        const flights = await this.model.find(filter).lean();
+
+    const cabinOk = (c: any) =>
+      c.availableSeats >= q.passengers &&  
+      (!q.cabinClass || c.cabinClass === q.cabinClass) &&
+      (q.minPrice === undefined || c.price >= q.minPrice) &&
+      (q.maxPrice === undefined || c.price <= q.maxPrice);
+
+    const rows = flights.map((f) => {
+      const cabins = f.cabins.filter(cabinOk);
+      return {
+        ...f,
+        cabins,
+        fromPrice: Math.min(...cabins.map((c) => c.price)),
+        durationMinutes: Math.round(
+          (f.arrivalTimeUtc.getTime() - f.departureTimeUtc.getTime()) / 60000,
+        ),
+      };
+    });
+
+    const sortValue = (r: (typeof rows)[number]) =>
+      q.sortBy === FlightSortBy.PRICE
+        ? r.fromPrice
+        : q.sortBy === FlightSortBy.DURATION
+          ? r.durationMinutes
+          : r.departureTimeUtc.getTime();
+
+    const direction = q.sortOrder === SortOrder.DESC ? -1 : 1;
+    rows.sort((a, b) => direction * (sortValue(a) - sortValue(b)));
+
+    const start = getSkip(q.page);
+    const items = rows.slice(start, start + PAGE_SIZE).map((r) => toFlightView(r, dep, arr));
+
+    const result = buildPage(items, rows.length, q.page);
+    return rows.length === 0 ? { ...result, message: 'No flights found' } : result;
   }
 }
