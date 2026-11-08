@@ -151,4 +151,28 @@ What I did myself:
 - Set the airline baggage policy as a moderator and tested every case in Swagger with my own test flights (prices, passenger types, flight errors, baggage rules, access errors).
 - Resolved the merge with develop and checked that only the booking files were committed.
 
+==================================================
+Date: 2026-11-08
+Member: Member 3
+Branch: feature/FLT-22-seat-hold
+Requirements: FLT-22 (atomic seat hold, 10-minute expiry), GEN-11 (booking status lifecycle)
+Tool: Claude
+
+What I asked:
+- Step-by-step help building the seat hold: how to reserve seats atomically when the seats are inside the cabins array, how to undo the first flight of a round trip if the second is full, and how to create the Pending Payment booking.
+- How to expire unpaid holds every minute without returning seats twice if a payment arrives at the same moment.
+- How to enforce the allowed status changes (GEN-11) and how to test the race for the last seat.
+
+What the AI produced:
+- The atomic seat methods (one updateOne with $elemMatch and cabins.$, plus giving seats back), the hold() method and the POST /api/flight-bookings/hold endpoint.
+- The expiry job with @Cron (every minute) and the atomic status change.
+- The GEN-11 transitions table with changeStatus() and its unit test.
+- The race test script (test/race-hold.mjs) and the Swagger and Compass test steps.
+- Fixes for a TypeScript error (cabinClass typed as string instead of CabinClass) and the Mongoose "new" option warning.
+
+What I did myself:
+- Typed in and adapted the AI's code in our files, and fixed the compile and warning issues it pointed out.
+- Tested the hold in Swagger and Compass: booking created as PENDING_PAYMENT with a 10-minute hold, seats taken, second hold on the last seat refused (409), expired holds set to EXPIRED with seats returned.
+- Ran the unit test and the race test (5 requests for 1 seat: exactly one 201, four 409, no overbooking).
+
 No secrets (connection string, JWT secrets, passwords, API keys) were shared with the AI.
