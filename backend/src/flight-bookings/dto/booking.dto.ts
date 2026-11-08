@@ -26,17 +26,15 @@ export class SegmentDto {
   flightId: string;
 
   @ApiProperty({ enum: CabinClass, example: CabinClass.ECONOMY })
-  @IsEnum(CabinClass)
   @Transform(({ value }) =>
-  typeof value === 'string'
-    ? Object.values(CabinClass).find(
-        (c) => c.toLowerCase() === value.trim().toLowerCase(),
-      ) ?? value
-    : value,
-)
-@IsEnum(CabinClass)
-cabinClass: CabinClass;
-  
+    typeof value === 'string'
+      ? Object.values(CabinClass).find(
+          (c) => c.toLowerCase() === value.trim().toLowerCase(),
+        ) ?? value
+      : value,
+  )
+  @IsEnum(CabinClass)
+  cabinClass: CabinClass;
 }
 
 export class PassengerDto {
