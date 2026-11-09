@@ -226,3 +226,17 @@ How the output was used:
 Used the event-based design to avoid a circular module import and the
 booking handler as a base. I reviewed it and tested it in Swagger.
 ================================================
+
+================================================
+Date: 2026-11-08
+Student: Ahmed Hossam
+Tool: Claude
+Related Requirement: FLT-12 (a)
+Prompt:
+Add round-trip search to my existing flight search: an optional returnDate
+that runs the search twice and returns outbound and return results.
+
+How the output was used:
+Used the idea of reusing the one-way search for both directions. I
+reviewed it and tested it in Swagger.
+================================================
