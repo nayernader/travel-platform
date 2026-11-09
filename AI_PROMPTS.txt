@@ -240,3 +240,18 @@ How the output was used:
 Used the idea of reusing the one-way search for both directions. I
 reviewed it and tested it in Swagger.
 ================================================
+
+================================================
+Date: 2026-11-09
+Student: Ahmed Hossam
+Tool: Claude
+Related Requirement: FLT-05
+Prompt:
+Write the moderator "edit flight" feature: edit times, airports, cabin price
+and seat counts of my own Scheduled flights, with the booked + held seats
+rule and notifications for time changes.
+
+How the output was used:
+Used the atomic seat update and the schedule notification as a base. I
+reviewed it and tested it in Swagger.
+================================================

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Patch, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags, ApiResponse } from '@nestjs/swagger';
 
 import { FlightsService } from './flights.service';
@@ -10,6 +10,8 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Role } from '../common/enums/role.enum';
 import type { UserDocument } from '../users/schemas/user.schema';
 import { SearchFlightsDto } from './dto/search-flights.dto';
+import { UpdateFlightDto } from './dto/update-flight.dto';
+import { UpdateCabinDto } from './dto/update-cabin.dto';
 
 @ApiTags('Flights')
 @Controller('flights')
@@ -62,6 +64,45 @@ export class FlightsController {
   @ApiResponse({ status: 409, description: 'The flight is not Scheduled (already cancelled or departed)' })
   cancel(@CurrentUser() user: UserDocument, @Param('id') id: string) {
     return this.flights.cancel(user, id);
+  }
+
+    @Auth(Role.AIRLINE_MODERATOR)
+  @Patch(':id')
+  @ApiOperation({
+    summary: 'Edit the times or airports of my Scheduled flight',
+    description:
+      'FLT-05. Times are LOCAL. Airports cannot change once the flight has bookings (if an airport changes, send both times). Passengers with confirmed bookings are notified of time changes.',
+  })
+  @ApiResponse({ status: 200, description: 'The updated flight with local times' })
+  @ApiResponse({ status: 400, description: 'Invalid times or airports, nothing to update, or the flight is not Scheduled' })
+  @ApiResponse({ status: 401, description: 'Not logged in' })
+  @ApiResponse({ status: 403, description: 'Not an airline moderator, or the flight belongs to another airline' })
+  @ApiResponse({ status: 404, description: 'Flight not found' })
+  @ApiResponse({ status: 409, description: 'Airports cannot change because the flight has bookings, or the flight number clashes' })
+  update(@CurrentUser() user: UserDocument, @Param('id') id: string, @Body() dto: UpdateFlightDto) {
+    return this.flights.update(user, id, dto);
+  }
+
+  @Auth(Role.AIRLINE_MODERATOR)
+  @Patch(':id/cabins/:cabinId')
+  @ApiOperation({
+    summary: 'Edit the price, seats or baggage rules of one cabin of my flight',
+    description:
+      'FLT-05. Seats cannot go below the seats already booked or held. Available seats change by the same difference. Existing bookings keep their agreed price.',
+  })
+  @ApiResponse({ status: 200, description: 'The updated cabin' })
+  @ApiResponse({ status: 400, description: 'Invalid values, nothing to update, or the flight is not Scheduled' })
+  @ApiResponse({ status: 401, description: 'Not logged in' })
+  @ApiResponse({ status: 403, description: 'Not an airline moderator, or the flight belongs to another airline' })
+  @ApiResponse({ status: 404, description: 'Flight or cabin not found' })
+  @ApiResponse({ status: 409, description: 'Seat count is below the booked or held seats' })
+  updateCabin(
+    @CurrentUser() user: UserDocument,
+    @Param('id') id: string,
+    @Param('cabinId') cabinId: string,
+    @Body() dto: UpdateCabinDto,
+  ) {
+    return this.flights.updateCabin(user, id, cabinId, dto);
   }
 
   @Get('search')

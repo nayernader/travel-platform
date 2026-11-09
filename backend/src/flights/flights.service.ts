@@ -7,7 +7,13 @@ import {
 } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Schema as MongooseSchema } from 'mongoose';
+import { Model, Schema as MongooseSchema, Types } from 'mongoose';
+import { UpdateFlightDto } from './dto/update-flight.dto';
+import { UpdateCabinDto } from './dto/update-cabin.dto';
+import { FlightBooking, FlightBookingDocument } from '../flight-bookings/schemas/flight-booking.schema';
+import { BookingStatus } from '../common/enums/booking-status.enum';
+import { NotificationType } from '../common/enums/notification-type.enum';
+import { NotificationsService } from '../notifications/notifications.service';
 import { DateTime } from 'luxon';
 
 import { Flight, FlightDocument, FlightStatus } from './schemas/flight.schema';
@@ -29,9 +35,12 @@ export class FlightsService {
   constructor(
     @InjectModel(Flight.name) private model: Model<FlightDocument>,
     @InjectModel(Airline.name) private airlineModel: Model<AirlineDocument>,
+    @InjectModel(FlightBooking.name) private bookingModel: Model<FlightBookingDocument>,
     private readonly ref: ReferenceDataService,
     private readonly events: EventEmitter2,
+    private readonly notifications: NotificationsService,
   ) {}
+
 
   /** The airline always comes from the logged-in moderator, never from the request body. */
   private requireAirline(user: UserDocument): MongooseSchema.Types.ObjectId {
@@ -126,6 +135,7 @@ export class FlightsService {
   // ---------------- FLT-04: cabins ----------------
   /** Loads a flight and checks that it belongs to the moderator's airline. */
   async getOwned(user: UserDocument, id: string) {
+    if (!Types.ObjectId.isValid(id)) throw new NotFoundException('Flight not found');
     const flight = await this.model.findById(id);
     if (!flight) throw new NotFoundException('Flight not found');
     if (!user.providerId || flight.airline.toString() !== user.providerId.toString()) {
@@ -181,6 +191,165 @@ export class FlightsService {
     };
   }
 
+    // ---------------- FLT-05: edit flight ----------------
+  async update(user: UserDocument, id: string, dto: UpdateFlightDto) {
+    const flight = await this.getOwned(user, id); // 404, or 403 if another airline's
+    if (flight.status !== FlightStatus.SCHEDULED) {
+      throw new BadRequestException('Only Scheduled flights can be edited');
+    }
+    if (!dto.departureAirport && !dto.arrivalAirport && !dto.departureLocal && !dto.arrivalLocal) {
+      throw new BadRequestException('Nothing to update');
+    }
+
+    const depCode = dto.departureAirport?.toUpperCase() ?? flight.departureAirport;
+    const arrCode = dto.arrivalAirport?.toUpperCase() ?? flight.arrivalAirport;
+    if (depCode === arrCode) {
+      throw new BadRequestException('Departure and arrival airports must differ');
+    }
+
+    // airports cannot change once the flight has bookings (confirmed or still held)
+    const airportsChanged = depCode !== flight.departureAirport || arrCode !== flight.arrivalAirport;
+    if (airportsChanged) {
+      if (!dto.departureLocal || !dto.arrivalLocal) {
+        throw new BadRequestException(
+          'When an airport changes, send both departureLocal and arrivalLocal (the time zone changes too)',
+        );
+      }
+      const hasBookings = await this.bookingModel.exists({
+        'segments.flight': flight._id,
+        status: { $in: [BookingStatus.CONFIRMED, BookingStatus.PENDING_PAYMENT] },
+      });
+      if (hasBookings) {
+        throw new ConflictException('Airports cannot be changed once the flight has bookings');
+      }
+    }
+
+    const dep = await this.ref.findAirport(depCode);
+    const arr = await this.ref.findAirport(arrCode);
+    if (!dep || !arr) throw new BadRequestException('Unknown airport code');
+
+    // times: local, in each airport's zone, stored in UTC (same as FLT-03)
+    let departureTimeUtc = flight.departureTimeUtc;
+    let arrivalTimeUtc = flight.arrivalTimeUtc;
+    let departureDate = flight.departureDate;
+    if (dto.departureLocal) {
+      const local = this.toUtc(dto.departureLocal, this.zoneOf(dep));
+      departureTimeUtc = local.toUTC().toJSDate();
+      departureDate = local.toFormat('yyyy-LL-dd');
+    }
+    if (dto.arrivalLocal) {
+      arrivalTimeUtc = this.toUtc(dto.arrivalLocal, this.zoneOf(arr)).toUTC().toJSDate();
+    }
+    if (arrivalTimeUtc <= departureTimeUtc) {
+      throw new BadRequestException('Arrival must be after departure');
+    }
+    if (departureTimeUtc <= new Date()) {
+      throw new BadRequestException('Departure cannot be in the past');
+    }
+
+    let updated: FlightDocument | null;
+    try {
+      updated = await this.model.findOneAndUpdate(
+        { _id: flight._id, status: FlightStatus.SCHEDULED },
+        {
+          $set: {
+            departureAirport: depCode,
+            arrivalAirport: arrCode,
+            departureTimeUtc,
+            arrivalTimeUtc,
+            departureDate,
+          },
+        },
+        { returnDocument: 'after' },
+      );
+    } catch (e: any) {
+      if (e?.code === 11000) {
+        throw new ConflictException('This airline already has that flight number on that date');
+      }
+      throw e;
+    }
+    if (!updated) throw new ConflictException('The flight is no longer Scheduled');
+
+    const view = toFlightView(updated, dep, arr);
+
+    const timeChanged =
+      departureTimeUtc.getTime() !== flight.departureTimeUtc.getTime() ||
+      arrivalTimeUtc.getTime() !== flight.arrivalTimeUtc.getTime();
+    if (timeChanged) await this.notifySchedulePassengers(updated, view);
+
+    return view;
+  }
+
+  /** FLT-05: passengers with CONFIRMED bookings are told about the new times. */
+  private async notifySchedulePassengers(
+    flight: FlightDocument,
+    view: { departureLocal: string; departureTimeZone: string; arrivalLocal: string; arrivalTimeZone: string },
+  ) {
+    const bookings = await this.bookingModel
+      .find({ 'segments.flight': flight._id, status: BookingStatus.CONFIRMED })
+      .select('user reference')
+      .lean();
+
+    for (const b of bookings) {
+      await this.notifications.notify(
+        b.user,
+        NotificationType.FLIGHT_SCHEDULE_CHANGED,
+        `The schedule of flight ${flight.flightNumber} (${flight.departureAirport} to ${flight.arrivalAirport}) changed. ` +
+          `It now departs ${view.departureLocal.replace('T', ' ')} (${view.departureTimeZone}) and arrives ` +
+          `${view.arrivalLocal.replace('T', ' ')} (${view.arrivalTimeZone}). Your booking ${b.reference} is still valid.`,
+        { bookingId: b._id.toString(), reference: b.reference, flightId: flight.id },
+      );
+    }
+  }
+
+  /** FLT-05: price, seat count and baggage rules of one cabin. Existing bookings keep their own unitPrice. */
+  async updateCabin(user: UserDocument, id: string, cabinId: string, dto: UpdateCabinDto) {
+    const flight = await this.getOwned(user, id);
+    if (flight.status !== FlightStatus.SCHEDULED) {
+      throw new BadRequestException('Only Scheduled flights can be edited');
+    }
+    if (Object.values(dto).every((v) => v === undefined)) {
+      throw new BadRequestException('Nothing to update');
+    }
+    if (!Types.ObjectId.isValid(cabinId)) throw new NotFoundException('Cabin not found');
+    const cabin = flight.cabins.find((c: any) => c._id.toString() === cabinId);
+    if (!cabin) throw new NotFoundException('Cabin not found');
+
+    const set: Record<string, number> = {};
+    if (dto.price !== undefined) set['cabins.$.price'] = dto.price;
+    if (dto.freeBags !== undefined) set['cabins.$.freeBags'] = dto.freeBags;
+    if (dto.maxBagWeightKg !== undefined) set['cabins.$.maxBagWeightKg'] = dto.maxBagWeightKg;
+
+    const update: Record<string, any> = {};
+    if (Object.keys(set).length) update.$set = set;
+    const match: Record<string, any> = { _id: new Types.ObjectId(cabinId) };
+
+    if (dto.totalSeats !== undefined) {
+      const bookedOrHeld = cabin.totalSeats - cabin.availableSeats;
+      if (dto.totalSeats < bookedOrHeld) {
+        throw new ConflictException(
+          `${cabin.cabinClass} cannot go below ${bookedOrHeld} seats: they are already booked or held`,
+        );
+      }
+      const diff = dto.totalSeats - cabin.totalSeats;
+      // the same difference is applied to the available seats, in ONE atomic update.
+      // The filter makes it fail if a hold took seats in the meantime.
+      match.totalSeats = cabin.totalSeats;
+      match.availableSeats = { $gte: -diff };
+      update.$inc = { 'cabins.$.totalSeats': diff, 'cabins.$.availableSeats': diff };
+    }
+
+    const updated = await this.model.findOneAndUpdate(
+      { _id: flight._id, status: FlightStatus.SCHEDULED, cabins: { $elemMatch: match } },
+      update,
+      { returnDocument: 'after' },
+    );
+    if (!updated) {
+      throw new ConflictException('The cabin was changed at the same time. Please try again.');
+    }
+    return updated.cabins.find((c: any) => c._id.toString() === cabinId);
+  }
+  
   // ---------------- FLT-30: auto Departed ----------------
   @Cron(CronExpression.EVERY_MINUTE)
   async markDeparted() {
