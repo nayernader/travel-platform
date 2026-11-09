@@ -30,6 +30,12 @@ import { FlightSortBy, SearchFlightsDto, SortOrder } from './dto/search-flights.
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { FLIGHT_CANCELLED, FlightCancelledEvent } from '../common/events/flight-cancelled.event';
 
+/** FLT-29: one CSV cell. Quotes values with commas or quotes, and defuses Excel formulas (=, +, -, @). */
+function csvCell(value: unknown): string {
+  let s = value === undefined || value === null ? '' : String(value);
+  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
+  return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
 @Injectable()
 export class FlightsService {
   constructor(
@@ -349,7 +355,85 @@ export class FlightsService {
     }
     return updated.cabins.find((c: any) => c._id.toString() === cabinId);
   }
-  
+    // ---------------- FLT-29: bookings and passenger export ----------------
+  /** Bookings of a flight that the airline needs to see: Confirmed and Cancelled. */
+  private flightBookingsFilter(flightId: Types.ObjectId) {
+    return {
+      'segments.flight': flightId, // indexed
+      status: { $in: [BookingStatus.CONFIRMED, BookingStatus.CANCELLED] },
+    };
+  }
+
+  /** The cabin this booking uses on THIS flight (a round trip has two segments). */
+  private cabinOnFlight(booking: { segments: { flight: Types.ObjectId; cabinClass: string }[] }, flightId: string) {
+    return booking.segments.find((s) => s.flight.toString() === flightId)?.cabinClass ?? null;
+  }
+
+  /** FLT-29: the bookings of my flight (10 per page) and the seats remaining per cabin. */
+  async listBookings(user: UserDocument, id: string, page = 1) {
+    const flight = await this.getOwned(user, id); // 404, or 403 if another airline's
+    const filter = this.flightBookingsFilter(flight._id as Types.ObjectId);
+
+    const [rows, total] = await Promise.all([
+      this.bookingModel
+        .find(filter)
+        .sort({ createdAt: 1, _id: 1 })
+        .skip(getSkip(page))
+        .limit(PAGE_SIZE)
+        .lean(),
+      this.bookingModel.countDocuments(filter),
+    ]);
+
+    const items = rows.map((b) => ({
+      bookingId: b._id.toString(),
+      reference: b.reference ?? null,
+      status: b.status,
+      cabinClass: this.cabinOnFlight(b, flight.id),
+      seats: b.seats,
+      passengers: b.passengers.map((p) => ({ fullName: p.fullName, type: p.type })),
+    }));
+
+    return {
+      ...buildPage(items, total, page),
+      flightNumber: flight.flightNumber,
+      // availableSeats already excludes seats that are booked or still held
+      seatsRemaining: flight.cabins.map((c) => ({
+        cabinClass: c.cabinClass,
+        totalSeats: c.totalSeats,
+        availableSeats: c.availableSeats,
+      })),
+    };
+  }
+
+  /** FLT-29: the passenger list as CSV, one row per passenger. */
+  async passengersCsv(user: UserDocument, id: string) {
+    const flight = await this.getOwned(user, id);
+    const bookings = await this.bookingModel
+      .find(this.flightBookingsFilter(flight._id as Types.ObjectId))
+      .sort({ createdAt: 1, _id: 1 })
+      .lean();
+
+    const lines = [
+      ['Reference', 'Status', 'Cabin', 'Seats in booking', 'Passenger', 'Type', 'Passport', 'Extra bags']
+        .map(csvCell)
+        .join(','),
+    ];
+    for (const b of bookings) {
+      const cabin = this.cabinOnFlight(b, flight.id);
+      for (const p of b.passengers) {
+        lines.push(
+          [b.reference ?? '', b.status, cabin, b.seats, p.fullName, p.type, p.passportNumber, p.extraBags]
+            .map(csvCell)
+            .join(','),
+        );
+      }
+    }
+
+    return {
+      fileName: `passengers-${flight.flightNumber}-${flight.departureDate}.csv`,
+      csv: '\uFEFF' + lines.join('\r\n') + '\r\n', // BOM so Excel shows non-English names correctly
+    };
+  }
   // ---------------- FLT-30: auto Departed ----------------
   @Cron(CronExpression.EVERY_MINUTE)
   async markDeparted() {

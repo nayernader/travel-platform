@@ -1,5 +1,6 @@
-import { Body, Controller, Get, Param, Post, Patch, Query } from '@nestjs/common';
-import { ApiOperation, ApiTags, ApiResponse } from '@nestjs/swagger';
+import { Body, Controller, Get, Param, Post, Patch, Query, StreamableFile } from '@nestjs/common';
+import { ApiOperation, ApiTags, ApiResponse, ApiProduces } from '@nestjs/swagger';
+import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 
 import { FlightsService } from './flights.service';
 import { CreateFlightDto } from './dto/create-flight.dto';
@@ -50,23 +51,11 @@ export class FlightsController {
   @ApiResponse({ status: 403, description: 'Not an airline moderator, or the flight belongs to another airline' })
   @ApiResponse({ status: 404, description: 'Flight not found' })
   @ApiResponse({ status: 409, description: 'The flight is not Scheduled (already cancelled or departed)' })
-    @Auth(Role.AIRLINE_MODERATOR)
-  @Post(':id/cancel')
-  @ApiOperation({
-    summary: 'Cancel one of my Scheduled flights',
-    description:
-      'FLT-06. The flight becomes CANCELLED and disappears from search. Confirmed bookings are cancelled with a 100% refund, pending holds are released, and passengers are notified.',
-  })
-  @ApiResponse({ status: 201, description: 'Flight cancelled, with the number of bookings cancelled and holds released' })
-  @ApiResponse({ status: 401, description: 'Not logged in' })
-  @ApiResponse({ status: 403, description: 'Not an airline moderator, or the flight belongs to another airline' })
-  @ApiResponse({ status: 404, description: 'Flight not found' })
-  @ApiResponse({ status: 409, description: 'The flight is not Scheduled (already cancelled or departed)' })
   cancel(@CurrentUser() user: UserDocument, @Param('id') id: string) {
     return this.flights.cancel(user, id);
   }
 
-    @Auth(Role.AIRLINE_MODERATOR)
+  @Auth(Role.AIRLINE_MODERATOR)
   @Patch(':id')
   @ApiOperation({
     summary: 'Edit the times or airports of my Scheduled flight',
@@ -103,6 +92,45 @@ export class FlightsController {
     @Body() dto: UpdateCabinDto,
   ) {
     return this.flights.updateCabin(user, id, cabinId, dto);
+  }
+
+  @Auth(Role.AIRLINE_MODERATOR)
+  @Get(':id/bookings')
+  @ApiOperation({
+    summary: 'Bookings of my flight and the seats remaining per cabin',
+    description:
+      'FLT-29, GEN-05. Confirmed and Cancelled bookings with reference, passenger names, cabin, seats and status (10 per page), plus seats remaining per cabin.',
+  })
+  @ApiResponse({ status: 200, description: 'Page of bookings and seatsRemaining per cabin' })
+  @ApiResponse({ status: 400, description: 'Invalid page' })
+  @ApiResponse({ status: 401, description: 'Not logged in' })
+  @ApiResponse({ status: 403, description: 'Not an airline moderator, or the flight belongs to another airline' })
+  @ApiResponse({ status: 404, description: 'Flight not found' })
+  listBookings(
+    @CurrentUser() user: UserDocument,
+    @Param('id') id: string,
+    @Query() query: PaginationQueryDto,
+  ) {
+    return this.flights.listBookings(user, id, query.page);
+  }
+
+  @Auth(Role.AIRLINE_MODERATOR)
+  @Get(':id/passengers/export')
+  @ApiProduces('text/csv')
+  @ApiOperation({
+    summary: 'Download the passenger list of my flight as CSV',
+    description: 'FLT-29. One row per passenger: reference, status, cabin, seats, name, type, passport, extra bags.',
+  })
+  @ApiResponse({ status: 200, description: 'CSV file' })
+  @ApiResponse({ status: 401, description: 'Not logged in' })
+  @ApiResponse({ status: 403, description: 'Not an airline moderator, or the flight belongs to another airline' })
+  @ApiResponse({ status: 404, description: 'Flight not found' })
+  async exportPassengers(@CurrentUser() user: UserDocument, @Param('id') id: string) {
+    const { fileName, csv } = await this.flights.passengersCsv(user, id);
+    return new StreamableFile(Buffer.from(csv, 'utf8'), {
+      type: 'text/csv; charset=utf-8',
+      disposition: `attachment; filename="${fileName}"`,
+    });
   }
 
   @Get('search')
