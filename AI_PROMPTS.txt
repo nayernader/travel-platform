@@ -255,3 +255,37 @@ How the output was used:
 Used the atomic seat update and the schedule notification as a base. I
 reviewed it and tested it in Swagger.
 ================================================
+
+================================================
+Date: 2026-11-10
+Student: Gaby Ramy
+Tool: Claude
+Related Requirement: HTL-01, HTL-02, HTL-03 (schema)
+Prompt:
+Using my Member 4 guide and the existing repo, write the Hotel and Room
+schemas, the hotel DTOs, the hotels service, controller and module: the
+admin creates a hotel, the admin or hotel moderator edits it, and anyone
+can view the hotel details.
+
+How the output was used:
+Used the generated files as a base and copied them into backend/src/hotels.
+I fixed the UserDocument import (import type) so the build passes, reviewed
+the code, and tested it in Swagger: create (201), missing name and starClass 9
+(400), normal user (403), logged out (401), get by id (200), unknown id (404).
+================================================
+
+================================================
+Date: 2026-11-10
+Student: Gaby Ramy
+Tool: Claude
+Related Requirement: GEN-13 (setup)
+Prompt:
+Asked how to set up the project from the guide, and for help with a
+database connection error when starting the backend (the app read a
+different MONGODB_URI than my .env).
+
+How the output was used:
+Used the explanation to check my .env location and clear a MONGODB_URI
+environment variable from another project. The server then started and
+connected to the shared database.
+================================================
