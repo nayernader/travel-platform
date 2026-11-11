@@ -427,9 +427,7 @@ export class FlightBookingsService {
     return { fileName: `e-ticket-${booking.reference}.pdf`, pdf: await done };
   }
 
-  /** FLT-22, GEN-11: every minute, expired holds become EXPIRED and their seats are released. */
-  @Cron(CronExpression.EVERY_MINUTE)
-    /** FLT-25: my bookings for one group (upcoming / past / cancelled), 10 per page. */
+   /** FLT-25: my bookings for one group (upcoming / past / cancelled), 10 per page. */
   async findMine(userId: string, query: ListBookingsQueryDto) {
     const now = new Date();
     const group = query.group ?? BookingGroup.UPCOMING;
@@ -602,6 +600,9 @@ export class FlightBookingsService {
     ]);
     for (const { _id } of due) await this.changeStatus(_id, BookingStatus.COMPLETED);
   }
+
+  /** FLT-22, GEN-11: every minute, expired holds become EXPIRED and their seats are released. */
+  @Cron(CronExpression.EVERY_MINUTE)
   async expireHolds(): Promise<void> {
     const now = new Date();
     const due = await this.bookingModel
