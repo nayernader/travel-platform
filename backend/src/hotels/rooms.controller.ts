@@ -1,6 +1,8 @@
 import { Body, Controller, Delete, Param, Patch, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { RoomsService } from './rooms.service';
+import { AvailabilityService } from './availability.service';
+import { AddRangeDto, ReplaceAvailabilityDto } from './dto/availability.dto';
 import { CreateRoomDto, UpdateRoomDto } from './dto/room.dto';
 import { Auth } from '../auth/decorators/auth.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -10,7 +12,34 @@ import type { UserDocument } from '../users/schemas/user.schema';
 @ApiTags('Hotel rooms')
 @Controller('hotels/:hotelId/rooms')
 export class RoomsController {
-  constructor(private readonly rooms: RoomsService) {}
+  constructor(
+    private readonly rooms: RoomsService,
+    private readonly availability: AvailabilityService,
+  ) {}
+
+  @Auth(Role.HOTEL_MODERATOR)
+  @Post(':roomId/availability')
+  @ApiOperation({ summary: 'Add a bookable range or a blocked range for a room', description: 'HTL-04, HTL-06' })
+  addRange(
+    @CurrentUser() user: UserDocument,
+    @Param('hotelId') hotelId: string,
+    @Param('roomId') roomId: string,
+    @Body() dto: AddRangeDto,
+  ) {
+    return this.availability.add(user, hotelId, roomId, dto);
+  }
+
+  @Auth(Role.HOTEL_MODERATOR)
+  @Patch(':roomId/availability')
+  @ApiOperation({ summary: 'Replace the room availability ranges', description: 'HTL-05' })
+  replaceRanges(
+    @CurrentUser() user: UserDocument,
+    @Param('hotelId') hotelId: string,
+    @Param('roomId') roomId: string,
+    @Body() dto: ReplaceAvailabilityDto,
+  ) {
+    return this.availability.replace(user, hotelId, roomId, dto);
+  }
 
   @Auth(Role.HOTEL_MODERATOR)
   @Post()
