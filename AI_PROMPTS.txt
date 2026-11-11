@@ -255,3 +255,22 @@ How the output was used:
 Used the atomic seat update and the schedule notification as a base. I
 reviewed it and tested it in Swagger.
 ================================================
+
+================================================
+Date: 2026-11-11
+Student: Ahmed Hossam
+Tool: Claude
+Related Requirement: FLT-22, FLT-26
+Prompt:
+My flight-bookings service logs an error every minute and holds are not
+expiring. Find the cause and fix it. Also check that the refund tiers are
+read correctly from the airline cancellation policy.
+
+How the output was used:
+Found that the every-minute cron decorator was placed on findMine instead
+of expireHolds, and moved it. The airline schema stores the policy as an
+array, so the refund lookup was changed to read an array (or { tiers }).
+I reviewed the changes, tested hold expiry and refund preview in Swagger,
+and also removed the duplicate cancel route decorators in the flights
+controller.
+================================================
