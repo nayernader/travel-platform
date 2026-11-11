@@ -1,0 +1,47 @@
+import { Body, Controller, Delete, Param, Patch, Post } from '@nestjs/common';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { RoomsService } from './rooms.service';
+import { CreateRoomDto, UpdateRoomDto } from './dto/room.dto';
+import { Auth } from '../auth/decorators/auth.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { Role } from '../common/enums/role.enum';
+import type { UserDocument } from '../users/schemas/user.schema';
+
+@ApiTags('Hotel rooms')
+@Controller('hotels/:hotelId/rooms')
+export class RoomsController {
+  constructor(private readonly rooms: RoomsService) {}
+
+  @Auth(Role.HOTEL_MODERATOR)
+  @Post()
+  @ApiOperation({ summary: 'Add a room to my hotel', description: 'HTL-03' })
+  create(@CurrentUser() user: UserDocument, @Param('hotelId') hotelId: string, @Body() dto: CreateRoomDto) {
+    return this.rooms.create(user, hotelId, dto);
+  }
+
+  @Auth(Role.HOTEL_MODERATOR)
+  @Patch(':roomId')
+  @ApiOperation({ summary: 'Edit beds, occupancy, price, type', description: 'HTL-05' })
+  update(
+    @CurrentUser() user: UserDocument,
+    @Param('hotelId') hotelId: string,
+    @Param('roomId') roomId: string,
+    @Body() dto: UpdateRoomDto,
+  ) {
+    return this.rooms.update(user, hotelId, roomId, dto);
+  }
+
+  @Auth(Role.HOTEL_MODERATOR)
+  @Patch(':roomId/deactivate')
+  @ApiOperation({ summary: 'Deactivate a room. Rejected when it has active reservations.', description: 'HTL-06' })
+  deactivate(@CurrentUser() user: UserDocument, @Param('hotelId') hotelId: string, @Param('roomId') roomId: string) {
+    return this.rooms.deactivate(user, hotelId, roomId);
+  }
+
+  @Auth(Role.HOTEL_MODERATOR)
+  @Delete(':roomId')
+  @ApiOperation({ summary: 'Delete a room that was never reserved', description: 'HTL-06' })
+  remove(@CurrentUser() user: UserDocument, @Param('hotelId') hotelId: string, @Param('roomId') roomId: string) {
+    return this.rooms.remove(user, hotelId, roomId);
+  }
+}

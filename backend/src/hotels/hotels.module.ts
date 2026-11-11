@@ -4,6 +4,8 @@ import { Hotel, HotelSchema } from './schemas/hotel.schema';
 import { Room, RoomSchema } from './schemas/room.schema';
 import { HotelsService } from './hotels.service';
 import { HotelsController } from './hotels.controller';
+import { RoomsService } from './rooms.service';
+import { RoomsController } from './rooms.controller';
 
 @Module({
   imports: [
@@ -13,8 +15,8 @@ import { HotelsController } from './hotels.controller';
     ]),
   ],
   // Member 5 will add HotelSearchController FIRST in this array.
-  controllers: [HotelsController],
-  providers: [HotelsService],
-  exports: [HotelsService, MongooseModule],
+  controllers: [HotelsController, RoomsController],
+  providers: [HotelsService, RoomsService],
+  exports: [HotelsService, RoomsService, MongooseModule],
 })
 export class HotelsModule {}
