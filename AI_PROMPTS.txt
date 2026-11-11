@@ -257,6 +257,22 @@ reviewed it and tested it in Swagger.
 ================================================
 
 ================================================
+Date: 2026-11-11
+Student: Ahmed Hossam
+Tool: Claude
+Related Requirement: FLT-22, FLT-26
+Prompt:
+My flight-bookings service logs an error every minute and holds are not
+expiring. Find the cause and fix it. Also check that the refund tiers are
+read correctly from the airline cancellation policy.
+
+How the output was used:
+Found that the every-minute cron decorator was placed on findMine instead
+of expireHolds, and moved it. The airline schema stores the policy as an
+array, so the refund lookup was changed to read an array (or { tiers }).
+I reviewed the changes, tested hold expiry and refund preview in Swagger,
+and also removed the duplicate cancel route decorators in the flights
+controller.
 Date: 2026-11-10
 Student: Gaby Ramy
 Tool: Claude
@@ -272,9 +288,7 @@ Used the generated files as a base and copied them into backend/src/hotels.
 I fixed the UserDocument import (import type) so the build passes, reviewed
 the code, and tested it in Swagger: create (201), missing name and starClass 9
 (400), normal user (403), logged out (401), get by id (200), unknown id (404).
-================================================
 
-================================================
 Date: 2026-11-10
 Student: Gaby Ramy
 Tool: Claude
@@ -288,4 +302,3 @@ How the output was used:
 Used the explanation to check my .env location and clear a MONGODB_URI
 environment variable from another project. The server then started and
 connected to the shared database.
-================================================
