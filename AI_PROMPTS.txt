@@ -288,7 +288,7 @@ How the output was used:
 Used the explanation to check my .env location and clear a MONGODB_URI
 environment variable from another project. The server then started and
 connected to the shared database.
-==================================================
+================================================== 
 
 ==================================================
 Date: 2026-11-11
