@@ -14,6 +14,7 @@ import PDFDocument from 'pdfkit';
 import { allowedFrom } from './booking-status.util';
 import { BookingRequestDto, PassengerDto, SegmentDto } from './dto/booking.dto';
 import {
+  CancelledBy,
   FlightBooking,
   FlightBookingDocument,
   PassengerType,
@@ -34,16 +35,15 @@ import { Airline, AirlineDocument } from '../airlines/schemas/airline.schema';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { BookingGroup, ListBookingsQueryDto } from './dto/list-bookings-query.dto';
 import { refundPercentFor, Tier } from '../airlines/cancellation.util';
-import { CancelledBy } from './schemas/flight-booking.schema'; // add to the existing schema import
 import {
   BOOKING_REFUND_REQUESTED,
   BookingRefundRequestedEvent,
 } from '../common/events/booking-refund-requested.event';
+import { PAGE_SIZE } from '../common/utils/pagination';
 
 const INFANT_FARE_RATE = 0.1; // FLT-12(b): infants pay 10% of the fare and take no seat
 const HOLD_MINUTES = 10; // FLT-22: seats are held for 10 minutes while the user pays
 const FLIGHT_FIELDS = 'flightNumber departureAirport arrivalAirport departureTimeUtc arrivalTimeUtc';
-const PAGE_SIZE = 10; // GEN-05. ASSUMPTION: replace with the shared PAGE_SIZE/getSkip/buildPage helpers
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 @Injectable()
@@ -503,9 +503,10 @@ export class FlightBookingsService {
       throw new ConflictException('The flight has already departed and cannot be cancelled');
     }
 
-    // ASSUMPTION: the airline stores its tiers as cancellationPolicy.tiers [{ daysBefore, refundPercent }]
+    // the policy may be stored as an array of tiers or as { tiers: [...] }
     const airline = await this.airlineModel.findById(outbound.airline).select('cancellationPolicy').lean();
-    const tiers: Tier[] = (airline as any)?.cancellationPolicy?.tiers ?? [];
+    const raw = (airline as any)?.cancellationPolicy;
+    const tiers: Tier[] = Array.isArray(raw) ? raw : (raw?.tiers ?? []);
 
     const daysRemaining = Math.floor((outbound.departureTimeUtc.getTime() - Date.now()) / DAY_MS);
     const refundPercent = refundPercentFor(tiers, daysRemaining);
@@ -573,7 +574,7 @@ export class FlightBookingsService {
 
     await this.notifications.notify(
       booking.user,
-      NotificationType.BOOKING_CANCELLED, // ASSUMPTION: this enum value exists
+      NotificationType.BOOKING_CANCELLED,
       `Your flight booking ${booking.reference} was cancelled. Refund: ${refund.refundAmount} ${booking.currency} (${refund.refundPercent}%).`,
       { bookingId: booking.id, reference: booking.reference },
     );
