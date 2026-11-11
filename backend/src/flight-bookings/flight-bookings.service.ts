@@ -14,6 +14,7 @@ import PDFDocument from 'pdfkit';
 import { allowedFrom } from './booking-status.util';
 import { BookingRequestDto, PassengerDto, SegmentDto } from './dto/booking.dto';
 import {
+  CancelledBy,
   FlightBooking,
   FlightBookingDocument,
   PassengerType,
@@ -34,25 +35,19 @@ import { Airline, AirlineDocument } from '../airlines/schemas/airline.schema';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { BookingGroup, ListBookingsQueryDto } from './dto/list-bookings-query.dto';
 import { refundPercentFor, Tier } from '../airlines/cancellation.util';
-import { CancelledBy } from './schemas/flight-booking.schema'; // add to the existing schema import
 import {
   BOOKING_REFUND_REQUESTED,
   BookingRefundRequestedEvent,
 } from '../common/events/booking-refund-requested.event';
-
-import { Logger } from '@nestjs/common';        // add to the existing @nestjs/common import
-import { OnEvent } from '@nestjs/event-emitter'; // next to EventEmitter2
-import { FLIGHT_CANCELLED, FlightCancelledEvent } from '../common/events/flight-cancelled.event';
+import { PAGE_SIZE } from '../common/utils/pagination';
 
 const INFANT_FARE_RATE = 0.1; // FLT-12(b): infants pay 10% of the fare and take no seat
 const HOLD_MINUTES = 10; // FLT-22: seats are held for 10 minutes while the user pays
 const FLIGHT_FIELDS = 'flightNumber departureAirport arrivalAirport departureTimeUtc arrivalTimeUtc';
-const PAGE_SIZE = 10; // GEN-05. ASSUMPTION: replace with the shared PAGE_SIZE/getSkip/buildPage helpers
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 @Injectable()
 export class FlightBookingsService {
-  private readonly logger = new Logger(FlightBookingsService.name);
   constructor(
     @InjectModel(Flight.name) private flightModel: Model<FlightDocument>,
     @InjectModel(Airline.name) private airlineModel: Model<AirlineDocument>,
@@ -432,9 +427,7 @@ export class FlightBookingsService {
     return { fileName: `e-ticket-${booking.reference}.pdf`, pdf: await done };
   }
 
-  /** FLT-22, GEN-11: every minute, expired holds become EXPIRED and their seats are released. */
-  @Cron(CronExpression.EVERY_MINUTE)
-    /** FLT-25: my bookings for one group (upcoming / past / cancelled), 10 per page. */
+   /** FLT-25: my bookings for one group (upcoming / past / cancelled), 10 per page. */
   async findMine(userId: string, query: ListBookingsQueryDto) {
     const now = new Date();
     const group = query.group ?? BookingGroup.UPCOMING;
@@ -510,9 +503,10 @@ export class FlightBookingsService {
       throw new ConflictException('The flight has already departed and cannot be cancelled');
     }
 
-    // ASSUMPTION: the airline stores its tiers as cancellationPolicy.tiers [{ daysBefore, refundPercent }]
+    // the policy may be stored as an array of tiers or as { tiers: [...] }
     const airline = await this.airlineModel.findById(outbound.airline).select('cancellationPolicy').lean();
-    const tiers: Tier[] = (airline as any)?.cancellationPolicy?.tiers ?? [];
+    const raw = (airline as any)?.cancellationPolicy;
+    const tiers: Tier[] = Array.isArray(raw) ? raw : (raw?.tiers ?? []);
 
     const daysRemaining = Math.floor((outbound.departureTimeUtc.getTime() - Date.now()) / DAY_MS);
     const refundPercent = refundPercentFor(tiers, daysRemaining);
@@ -580,7 +574,7 @@ export class FlightBookingsService {
 
     await this.notifications.notify(
       booking.user,
-      NotificationType.BOOKING_CANCELLED, // ASSUMPTION: this enum value exists
+      NotificationType.BOOKING_CANCELLED,
       `Your flight booking ${booking.reference} was cancelled. Refund: ${refund.refundAmount} ${booking.currency} (${refund.refundPercent}%).`,
       { bookingId: booking.id, reference: booking.reference },
     );
@@ -608,78 +602,8 @@ export class FlightBookingsService {
     for (const { _id } of due) await this.changeStatus(_id, BookingStatus.COMPLETED);
   }
 
-  /** FLT-06: a flight was cancelled. Confirmed bookings get a 100% refund, pending holds are released. */
-  @OnEvent(FLIGHT_CANCELLED, { suppressErrors: false })
-  async onFlightCancelled(event: FlightCancelledEvent) {
-    const bookings = await this.bookingModel.find({
-      'segments.flight': event.flightId,
-      status: { $in: [BookingStatus.CONFIRMED, BookingStatus.PENDING_PAYMENT] },
-    });
-
-    let cancelledBookings = 0;
-    let expiredHolds = 0;
-    const when = event.departureTimeUtc.toISOString().slice(0, 10);
-
-    for (const b of bookings) {
-      try {
-        // 1) a pending hold is simply released
-        if (b.status === BookingStatus.PENDING_PAYMENT) {
-          const expired = await this.changeStatus(b._id, BookingStatus.EXPIRED);
-          if (expired) {
-            await this.returnOtherSegments(expired, event.flightId);
-            await this.notifications.notify(
-              expired.user,
-              NotificationType.FLIGHT_CANCELLED,
-              `Flight ${event.flightNumber} (${event.route}, ${when}) was cancelled, so your seat hold was released.`,
-              { bookingId: expired.id },
-            );
-            expiredHolds++;
-            continue;
-          }
-          // not pending any more: it may have just been paid, so try to cancel it below
-        }
-
-        // 2) a confirmed booking is cancelled with a full refund (not the airline tiers)
-        const booking = await this.changeStatus(b._id, BookingStatus.CANCELLED, {
-          cancelledBy: CancelledBy.AIRLINE,
-          refundPercent: 100,
-          cancelledAt: new Date(),
-        });
-        if (!booking) continue; // already changed elsewhere
-
-        await this.returnOtherSegments(booking, event.flightId);
-
-        if (booking.paymentId && booking.totalPrice > 0) {
-          this.events.emit(
-            BOOKING_REFUND_REQUESTED,
-            new BookingRefundRequestedEvent(booking.id, booking.paymentId, booking.totalPrice, booking.currency),
-          );
-        }
-
-        await this.notifications.notify(
-          booking.user,
-          NotificationType.FLIGHT_CANCELLED,
-          `Flight ${event.flightNumber} (${event.route}, ${when}) was cancelled by the airline. Your booking ${booking.reference} is cancelled and you will get a full refund of ${booking.totalPrice} ${booking.currency}.`,
-          { bookingId: booking.id, reference: booking.reference },
-        );
-        cancelledBookings++;
-      } catch (err) {
-        // one failing booking must not stop the others
-        this.logger.error(`Could not process booking ${b.id} for cancelled flight ${event.flightId}`, err as Error);
-      }
-    }
-
-    return { cancelledBookings, expiredHolds };
-  }
-
-  /** FLT-06: a round trip also holds seats on the OTHER flight. Return those (the cancelled flight needs no seats back). */
-  private async returnOtherSegments(booking: FlightBookingDocument, cancelledFlightId: string) {
-    for (const s of booking.segments) {
-      if (s.flight.toString() === cancelledFlightId) continue;
-      await this.returnSeats(s.flight.toString(), s.cabinClass, booking.seats);
-    }
-  }
-
+  /** FLT-22, GEN-11: every minute, expired holds become EXPIRED and their seats are released. */
+  @Cron(CronExpression.EVERY_MINUTE)
   async expireHolds(): Promise<void> {
     const now = new Date();
     const due = await this.bookingModel
