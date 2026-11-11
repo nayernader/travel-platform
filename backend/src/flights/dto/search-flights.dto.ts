@@ -28,9 +28,17 @@ export class SearchFlightsDto extends PaginationQueryDto {
   @Length(3, 3)
   arrivalAirport: string;
 
-  @ApiProperty({ example: '2026-12-20', description: 'Local date at the departure airport' })
+    @ApiProperty({ example: '2026-12-20', description: 'Local date at the departure airport' })
   @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'date must look like 2026-12-20' })
   date: string;
+
+  @ApiPropertyOptional({
+    example: '2026-12-27',
+    description: 'FLT-12(a): local date of the return flight. If given, the response is { outbound, return }. Must not be before date.',
+  })
+  @IsOptional()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'returnDate must look like 2026-12-27' })
+  returnDate?: string;
 
   @ApiPropertyOptional({ example: 1, default: 1 })
   @IsOptional()
