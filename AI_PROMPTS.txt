@@ -288,4 +288,21 @@ How the output was used:
 Used the explanation to check my .env location and clear a MONGODB_URI
 environment variable from another project. The server then started and
 connected to the shared database.
-================================================
+==================================================
+
+==================================================
+Date: 2026-11-11
+Student: Gaby Ramy
+Branch: feature/HTL-03-05-06-room-crud
+Related Requirement: HTL-03, HTL-05, HTL-06
+Tool: Claude
+Prompt:
+Asked Claude to write the room DTOs, service, controller and reservation
+conflict helper for the hotel moderator: add, edit, deactivate and delete rooms,
+and to fix a 500 error when editing a room.
+
+How the output was used:
+Copied the generated files into backend/src/hotels. Fixed the room update so
+fields that were not sent are not overwritten with undefined. Tested all the
+endpoints in Swagger (201, 409, 400, 200, 403).
+==================================================
