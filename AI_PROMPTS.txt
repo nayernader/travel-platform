@@ -318,6 +318,22 @@ Copied the generated files into backend/src/hotels. Fixed the room update so
 fields that were not sent are not overwritten with undefined. Tested all the
 endpoints in Swagger (201, 409, 400, 200, 403).
 
+Date: 2026-11-12
+Student: Gaby Ramy
+Branch: feature/HTL-09-10-policies
+Related Requirement: HTL-09, HTL-10, HTL-01 (photos), GEN-08
+Tool: Claude
+Prompt:
+Asked Claude to write the hotel policies feature (check-in/out times and
+cancellation tiers with validation) and the hotel photo upload endpoint
+(up to 5 JPG/PNG photos using the shared upload service).
+
+How the output was used:
+Copied the generated DTO, service method and controller routes into
+backend/src/hotels and reviewed them. Tested in Swagger: policies set (200),
+bad time (400), duplicate days-before (400), refund percent over 100 (400),
+other hotel (403), and photo upload (valid image, invalid file, more than 5
+photos, other hotel).
 Date: 2026-11-11
 Student: Gaby Ramy
 Branch: feature/HTL-04-availability-ranges
