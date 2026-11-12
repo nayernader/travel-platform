@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { UploadsModule } from '../uploads/uploads.module';
 import { Hotel, HotelSchema } from './schemas/hotel.schema';
 import { Room, RoomSchema } from './schemas/room.schema';
 import { HotelsService } from './hotels.service';
@@ -10,6 +11,7 @@ import { AvailabilityService } from './availability.service';
 
 @Module({
   imports: [
+    UploadsModule,
     MongooseModule.forFeature([
       { name: Hotel.name, schema: HotelSchema },
       { name: Room.name, schema: RoomSchema },
