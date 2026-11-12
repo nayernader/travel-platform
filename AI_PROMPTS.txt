@@ -318,7 +318,6 @@ Copied the generated files into backend/src/hotels. Fixed the room update so
 fields that were not sent are not overwritten with undefined. Tested all the
 endpoints in Swagger (201, 409, 400, 200, 403).
 
-==================================================
 Date: 2026-11-12
 Student: Gaby Ramy
 Branch: feature/HTL-09-10-policies
@@ -335,4 +334,24 @@ backend/src/hotels and reviewed them. Tested in Swagger: policies set (200),
 bad time (400), duplicate days-before (400), refund percent over 100 (400),
 other hotel (403), and photo upload (valid image, invalid file, more than 5
 photos, other hotel).
-==================================================
+Date: 2026-11-11
+Student: Gaby Ramy
+Branch: feature/HTL-04-availability-ranges
+Related Requirement: HTL-04, HTL-05 (availability part), HTL-06 (blocking)
+Tool: Claude
+Prompt:
+Asked Claude to write the room availability feature from my Member 4 guide for the
+hotel moderator: add non-overlapping bookable date ranges, block date ranges, and
+replace the availability list safely. Also asked what to test in Swagger and for help
+with a database connection error (a MONGODB_URI environment variable from another
+project overrode my .env).
+
+How the output was used:
+Copied the generated files into backend/src/hotels (availability.dto.ts,
+availability.service.ts) and added the two routes to rooms.controller.ts and the
+service to hotels.module.ts. Used import type for UserDocument to match the repo.
+The build passes. Cleared the MONGODB_URI variable so the server connected to the
+shared database. Tested in Swagger: add range (201), overlapping range (400),
+start after end (400), bad date and bad kind (400), block range (201), overlapping
+block (400), replace list (200), no token (401), normal user (403), unknown room (404).
+The 409 checks for reservations wait for Member 5's HotelBooking model.
