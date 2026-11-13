@@ -1,4 +1,7 @@
+<<<<<<< HEAD
+=======
 
+>>>>>>> origin/develop
 import {
   BadRequestException,
   ConflictException,
@@ -10,7 +13,11 @@ import {
   InjectModel,
 } from '@nestjs/mongoose';
 
+<<<<<<< HEAD
+import { Connection, Model, Types } from 'mongoose';
+=======
 import { Connection, Model } from 'mongoose';
+>>>>>>> origin/develop
 
 import { RoomsService } from './rooms.service';
 
@@ -22,6 +29,14 @@ import {
 
 import { findRoomConflicts } from './room-conflicts';
 
+<<<<<<< HEAD
+import { Room } from './schemas/room.schema';
+
+import type { UserDocument } from '../users/schemas/user.schema';
+
+const day = (s: string) =>
+  new Date(`${s.slice(0, 10)}T00:00:00.000Z`);
+=======
 import {
   Room,
   RoomDocument,
@@ -57,6 +72,7 @@ const day = (value: string): Date => {
 
   return parsedDate;
 };
+>>>>>>> origin/develop
 
 const overlaps = (
   a: { start: Date; end: Date },
@@ -97,7 +113,11 @@ export class AvailabilityService {
     private connection: Connection,
 
     @InjectModel(Room.name)
+<<<<<<< HEAD
+    private roomModel: Model<Room>,
+=======
     private roomModel: Model<RoomDocument>,
+>>>>>>> origin/develop
   ) {}
 
   /** HTL-04 and HTL-06: add a bookable range or a blocked range. */
@@ -216,7 +236,13 @@ export class AvailabilityService {
     }
 
     const rooms = await this.roomModel
+<<<<<<< HEAD
+      .find({
+        hotel: new Types.ObjectId(hotelId),
+      })
+=======
       .find({ hotel: hotelId })
+>>>>>>> origin/develop
       .sort({ roomNumber: 1 });
 
     const result = [];
@@ -241,7 +267,10 @@ export class AvailabilityService {
 
       let status = 'AVAILABLE';
 
+<<<<<<< HEAD
+=======
       // A reservation takes priority over a blocked range.
+>>>>>>> origin/develop
       if (bookings.length) {
         status = 'BOOKED';
       } else if (
@@ -265,4 +294,8 @@ export class AvailabilityService {
 
     return result;
   }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> origin/develop

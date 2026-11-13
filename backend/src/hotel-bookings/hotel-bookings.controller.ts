@@ -1,5 +1,10 @@
+<<<<<<< HEAD
+import { Body, Controller, Post } from '@nestjs/common';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
+=======
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+>>>>>>> origin/develop
 import { HotelBookingsService } from './hotel-bookings.service';
 import { CreateHotelBookingDto } from './dto/create-hotel-booking.dto';
 import { Auth } from '../auth/decorators/auth.decorator';
@@ -23,6 +28,8 @@ export class HotelBookingsController {
   ) {
     return this.bookings.hold(user, dto);
   }
+<<<<<<< HEAD
+=======
 
   @Auth()
   @Get()
@@ -60,4 +67,5 @@ export class HotelBookingsController {
   findOne(@CurrentUser() user: UserDocument, @Param('id') id: string) {
     return this.bookings.findOneFor(user, id);
   }
+>>>>>>> origin/develop
 }

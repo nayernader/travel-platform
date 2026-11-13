@@ -15,10 +15,14 @@ import { HotelsService } from './hotels.service';
 import { HotelsController } from './hotels.controller';
 
 import { RoomsService } from './rooms.service';
+<<<<<<< HEAD
+import { RoomsController, HotelAvailabilityController } from './rooms.controller';
+=======
 import {
   RoomsController,
   HotelAvailabilityController,
 } from './rooms.controller';
+>>>>>>> origin/develop
 
 import { AvailabilityService } from './availability.service';
 
