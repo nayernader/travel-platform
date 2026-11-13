@@ -13,7 +13,9 @@ import { HotelsModule } from '../hotels/hotels.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { HotelBookingsController } from './hotel-bookings.controller';
 import { HotelReservationsController } from './hotel-reservations.controller';
+import { ReviewsController } from './reviews.controller';
 import { HotelBookingsService } from './hotel-bookings.service';
+import { ReviewsService } from './reviews.service';
 
 @Module({
   imports: [
@@ -25,8 +27,12 @@ import { HotelBookingsService } from './hotel-bookings.service';
     HotelsModule,
     NotificationsModule,
   ],
-  controllers: [HotelBookingsController, HotelReservationsController],
-  providers: [HotelBookingsService],
+  controllers: [
+    HotelBookingsController,
+    HotelReservationsController,
+    ReviewsController,
+  ],
+  providers: [HotelBookingsService, ReviewsService],
   exports: [MongooseModule, HotelBookingsService],
 })
 export class HotelBookingsModule {}

@@ -416,3 +416,30 @@ Implement my reservations, refund preview, cancellation, and moderator reservati
 How the output was used:
 Added methods to HotelBookingsService, routes to HotelBookingsController, created HotelReservationsController, and registered controllers in HotelBookingsModule. Verified clean build.
 ==================================================
+
+
+==================================================
+Date: 2026-11-13
+Student: yasseenahmedya
+Branch: feature/HTL-23-24-reviews
+Related Requirement: HTL-23, HTL-24
+Tool: Gemini
+Prompt:
+Implement hotel reviews and ratings feature according to Member 5 guide:
+1. Create CreateReviewDto and UpdateReviewDto with validation (rating 1-5, comment max 1000).
+2. Create ReviewsService:
+   - recalc(hotelId): aggregates non-hidden reviews and updates hotel ratingAverage and ratingCount.
+   - create(user, bookingId, dto): allows only owner of COMPLETED reservation to review, enforces one review per booking via unique index (code 11000 -> 409).
+   - update(user, id, dto): edits review owned by user and recalculates hotel rating.
+   - remove(user, id): deletes review owned by user and recalculates hotel rating.
+   - listForHotel(hotelId, page): returns paginated visible reviews (newest first) along with hotel ratingAverage and ratingCount.
+3. Create ReviewsController with endpoints:
+   - POST /api/hotel-bookings/:id/review
+   - PATCH /api/reviews/:id
+   - DELETE /api/reviews/:id
+   - GET /api/hotels/:id/reviews
+4. Register ReviewsController and ReviewsService in HotelBookingsModule.
+
+How the output was used:
+Created review.dto.ts, reviews.service.ts, reviews.controller.ts, updated review.schema.ts to ensure proper Types.ObjectId typing, and registered them in HotelBookingsModule. Verified clean build.
+==================================================
