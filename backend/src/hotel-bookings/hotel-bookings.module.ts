@@ -1,9 +1,22 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { HotelBooking, HotelBookingSchema } from './schemas/hotel-booking.schema';
-import { RoomNight, RoomNightSchema } from './schemas/room-night.schema';
+import {
+  HotelBooking,
+  HotelBookingSchema,
+} from './schemas/hotel-booking.schema';
+import {
+  RoomNight,
+  RoomNightSchema,
+} from './schemas/room-night.schema';
 import { Review, ReviewSchema } from './schemas/review.schema';
 import { HotelsModule } from '../hotels/hotels.module';
+import { NotificationsModule } from '../notifications/notifications.module';
+import { HotelBookingsController } from './hotel-bookings.controller';
+import { HotelReservationsController } from './hotel-reservations.controller';
+import { ReviewsController } from './reviews.controller';
+import { HotelBookingsService } from './hotel-bookings.service';
+import { ReviewsService } from './reviews.service';
+
 @Module({
   imports: [
     MongooseModule.forFeature([
@@ -12,7 +25,14 @@ import { HotelsModule } from '../hotels/hotels.module';
       { name: Review.name, schema: ReviewSchema },
     ]),
     HotelsModule,
+    NotificationsModule,
   ],
-  exports: [MongooseModule],
+  controllers: [
+    HotelBookingsController,
+    HotelReservationsController,
+    ReviewsController,
+  ],
+  providers: [HotelBookingsService, ReviewsService],
+  exports: [MongooseModule, HotelBookingsService],
 })
 export class HotelBookingsModule {}
