@@ -146,8 +146,19 @@ export class HotelAvailabilityController {
     summary:
       'Room status for a date range: AVAILABLE, BOOKED (with reference) or BLOCKED (HTL-08)',
   })
+<<<<<<< HEAD
   @ApiQuery({ name: 'from', example: '2026-12-10' })
   @ApiQuery({ name: 'to', example: '2026-12-15' })
+=======
+  @ApiQuery({
+    name: 'from',
+    example: '2026-12-10',
+  })
+  @ApiQuery({
+    name: 'to',
+    example: '2026-12-15',
+  })
+>>>>>>> origin/develop
   status(
     @CurrentUser() user: UserDocument,
     @Param('hotelId') hotelId: string,

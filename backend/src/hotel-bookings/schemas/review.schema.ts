@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Schema as MongooseSchema } from 'mongoose';
+import { HydratedDocument, Schema as MongooseSchema, Types } from 'mongoose';
 
 export type ReviewDocument = HydratedDocument<Review>;
 
@@ -10,7 +10,7 @@ export class Review {
     ref: 'User',
     required: true,
   })
-  user: MongooseSchema.Types.ObjectId;
+  user: Types.ObjectId;
 
   @Prop({
     type: MongooseSchema.Types.ObjectId,
@@ -18,7 +18,7 @@ export class Review {
     required: true,
     index: true,
   })
-  hotel: MongooseSchema.Types.ObjectId;
+  hotel: Types.ObjectId;
 
   /** one review per Completed reservation, whatever the number of rooms */
   @Prop({
@@ -27,7 +27,7 @@ export class Review {
     required: true,
     unique: true,
   })
-  booking: MongooseSchema.Types.ObjectId;
+  booking: Types.ObjectId;
 
   @Prop({ required: true, min: 1, max: 5 })
   rating: number;
@@ -39,5 +39,4 @@ export class Review {
   hidden: boolean; // set by admin moderation (GEN-10)
 }
 
-export const ReviewSchema =
-  SchemaFactory.createForClass(Review);
+export const ReviewSchema = SchemaFactory.createForClass(Review);

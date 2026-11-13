@@ -374,3 +374,75 @@ Created CreateHotelBookingDto, RoomGuestsDto, HotelBookingsController, and
 HotelBookingsService. Registered controller and service in HotelBookingsModule.
 Verified clean build and Swagger API documentation.
 ==================================================
+<<<<<<< HEAD
+=======
+
+
+==================================================
+Date: 2026-11-13
+Student: yasseenahmedya
+Branch: feature/HTL-17-confirm-reservation
+Related Requirement: HTL-17, ACC-11
+Tool: Gemini
+Prompt:
+Implement the confirm-reservation feature for hotel bookings:
+1. makeReference helper generating unique 'HB-XXXXXX' references.
+2. getPayable(bookingId, userId) for Member 6's payment check with hold expiration and status checks.
+3. confirmPaid(bookingId, paymentId) called by payment webhook after Stripe confirms, with up to 5 retry attempts on duplicate reference, clearing holdExpiresAt, and emitting in-app notification BOOKING_CONFIRMED.
+4. findOneFor(user, id) with hotel population and ACC-11 ownership verification (owner or admin).
+5. GET /api/hotel-bookings/:id endpoint in HotelBookingsController.
+
+How the output was used:
+Added makeReference, getPayable, confirmPaid, and findOneFor to HotelBookingsService.
+Added @Get(':id') route with Swagger documentation to HotelBookingsController.
+Imported NotificationsModule in HotelBookingsModule. Verified clean build.
+==================================================
+
+
+==================================================
+Date: 2026-11-13
+Student: yasseenahmedya
+Branch: feature/HTL-20-21-22-my-reservations
+Related Requirement: HTL-20, HTL-21, HTL-22, HTL-23, GEN-11
+Tool: Gemini
+Prompt:
+Implement my reservations, refund preview, cancellation, and moderator reservations:
+1. listMine(user, group, page) grouping upcoming, past, cancelled with 10 per page pagination.
+2. refundPreview(user, id) calculating refund percent from hotel cancellation policy tiers and remaining days before check-in.
+3. cancel(user, id) setting status to CANCELLED, releasing room nights, emitting booking.refund.requested event when refundPercent > 0, and sending BOOKING_CANCELLED notification.
+4. listForHotel(user, hotelId, page) verifying moderator manages hotel and returning paginated reservations.
+5. @Cron(CronExpression.EVERY_5_MINUTES) completeFinished() auto-completing confirmed reservations after checkout date.
+6. Add @Get(), @Get(':id/cancel-preview'), and @Post(':id/cancel') to HotelBookingsController.
+7. Create HotelReservationsController with @Get('hotels/:id/reservations').
+
+How the output was used:
+Added methods to HotelBookingsService, routes to HotelBookingsController, created HotelReservationsController, and registered controllers in HotelBookingsModule. Verified clean build.
+==================================================
+
+
+==================================================
+Date: 2026-11-13
+Student: yasseenahmedya
+Branch: feature/HTL-23-24-reviews
+Related Requirement: HTL-23, HTL-24
+Tool: Gemini
+Prompt:
+Implement hotel reviews and ratings feature according to Member 5 guide:
+1. Create CreateReviewDto and UpdateReviewDto with validation (rating 1-5, comment max 1000).
+2. Create ReviewsService:
+   - recalc(hotelId): aggregates non-hidden reviews and updates hotel ratingAverage and ratingCount.
+   - create(user, bookingId, dto): allows only owner of COMPLETED reservation to review, enforces one review per booking via unique index (code 11000 -> 409).
+   - update(user, id, dto): edits review owned by user and recalculates hotel rating.
+   - remove(user, id): deletes review owned by user and recalculates hotel rating.
+   - listForHotel(hotelId, page): returns paginated visible reviews (newest first) along with hotel ratingAverage and ratingCount.
+3. Create ReviewsController with endpoints:
+   - POST /api/hotel-bookings/:id/review
+   - PATCH /api/reviews/:id
+   - DELETE /api/reviews/:id
+   - GET /api/hotels/:id/reviews
+4. Register ReviewsController and ReviewsService in HotelBookingsModule.
+
+How the output was used:
+Created review.dto.ts, reviews.service.ts, reviews.controller.ts, updated review.schema.ts to ensure proper Types.ObjectId typing, and registered them in HotelBookingsModule. Verified clean build.
+==================================================
+>>>>>>> origin/develop
