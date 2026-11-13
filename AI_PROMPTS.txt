@@ -374,6 +374,8 @@ Created CreateHotelBookingDto, RoomGuestsDto, HotelBookingsController, and
 HotelBookingsService. Registered controller and service in HotelBookingsModule.
 Verified clean build and Swagger API documentation.
 ==================================================
+<<<<<<< HEAD
+=======
 
 
 ==================================================
@@ -443,3 +445,4 @@ Implement hotel reviews and ratings feature according to Member 5 guide:
 How the output was used:
 Created review.dto.ts, reviews.service.ts, reviews.controller.ts, updated review.schema.ts to ensure proper Types.ObjectId typing, and registered them in HotelBookingsModule. Verified clean build.
 ==================================================
+>>>>>>> origin/develop

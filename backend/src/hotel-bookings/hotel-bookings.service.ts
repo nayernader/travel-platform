@@ -1,6 +1,12 @@
 import {
   BadRequestException,
   ConflictException,
+<<<<<<< HEAD
+  Injectable,
+} from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Cron, CronExpression } from '@nestjs/schedule';
+=======
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -8,6 +14,7 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+>>>>>>> origin/develop
 import { Model, Types } from 'mongoose';
 import {
   HotelBooking,
@@ -20,6 +27,11 @@ import {
 import { Room, RoomDocument } from '../hotels/schemas/room.schema';
 import { Hotel, HotelDocument } from '../hotels/schemas/hotel.schema';
 import { BookingStatus } from '../common/enums/booking-status.enum';
+<<<<<<< HEAD
+import { HotelSearchService } from '../hotels/hotel-search.service';
+import { CreateHotelBookingDto } from './dto/create-hotel-booking.dto';
+import { eachNight, nightsBetween, overlaps } from './stay.util';
+=======
 import { NotificationType } from '../common/enums/notification-type.enum';
 import { Role } from '../common/enums/role.enum';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -29,6 +41,7 @@ import { CreateHotelBookingDto } from './dto/create-hotel-booking.dto';
 import { eachNight, nightsBetween, overlaps } from './stay.util';
 import { refundPercentFor } from '../airlines/cancellation.util';
 import { buildPage, getSkip, PAGE_SIZE } from '../common/utils/pagination';
+>>>>>>> origin/develop
 import type { UserDocument } from '../users/schemas/user.schema';
 
 export const HOLD_MINUTES = 10;
@@ -45,9 +58,12 @@ export class HotelBookingsService {
     @InjectModel(Hotel.name)
     private hotels: Model<HotelDocument>,
     private readonly search: HotelSearchService,
+<<<<<<< HEAD
+=======
     private readonly notifications: NotificationsService,
     private readonly events: EventEmitter2,
     private readonly hotelsService: HotelsService,
+>>>>>>> origin/develop
   ) {}
 
   /** Releases the claimed nights of one booking (expiry or cancellation). */
@@ -181,6 +197,8 @@ export class HotelBookingsService {
       throw e;
     }
   }
+<<<<<<< HEAD
+=======
 
   private makeReference() {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -379,4 +397,5 @@ export class HotelBookingsService {
       { status: BookingStatus.COMPLETED },
     );
   }
+>>>>>>> origin/develop
 }
