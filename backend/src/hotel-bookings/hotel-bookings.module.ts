@@ -10,6 +10,7 @@ import {
 } from './schemas/room-night.schema';
 import { Review, ReviewSchema } from './schemas/review.schema';
 import { HotelsModule } from '../hotels/hotels.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { HotelBookingsController } from './hotel-bookings.controller';
 import { HotelBookingsService } from './hotel-bookings.service';
 
@@ -21,6 +22,7 @@ import { HotelBookingsService } from './hotel-bookings.service';
       { name: Review.name, schema: ReviewSchema },
     ]),
     HotelsModule,
+    NotificationsModule,
   ],
   controllers: [HotelBookingsController],
   providers: [HotelBookingsService],

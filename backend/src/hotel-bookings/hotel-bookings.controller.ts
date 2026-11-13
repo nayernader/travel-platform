@@ -1,4 +1,4 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { HotelBookingsService } from './hotel-bookings.service';
 import { CreateHotelBookingDto } from './dto/create-hotel-booking.dto';
@@ -22,5 +22,15 @@ export class HotelBookingsController {
     @Body() dto: CreateHotelBookingDto,
   ) {
     return this.bookings.hold(user, dto);
+  }
+
+  @Auth()
+  @Get(':id')
+  @ApiOperation({
+    summary:
+      'Reservation details: reference, rooms, dates, total, status (owner or admin)',
+  })
+  findOne(@CurrentUser() user: UserDocument, @Param('id') id: string) {
+    return this.bookings.findOneFor(user, id);
   }
 }

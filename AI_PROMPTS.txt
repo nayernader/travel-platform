@@ -374,3 +374,24 @@ Created CreateHotelBookingDto, RoomGuestsDto, HotelBookingsController, and
 HotelBookingsService. Registered controller and service in HotelBookingsModule.
 Verified clean build and Swagger API documentation.
 ==================================================
+
+
+==================================================
+Date: 2026-11-13
+Student: yasseenahmedya
+Branch: feature/HTL-17-confirm-reservation
+Related Requirement: HTL-17, ACC-11
+Tool: Gemini
+Prompt:
+Implement the confirm-reservation feature for hotel bookings:
+1. makeReference helper generating unique 'HB-XXXXXX' references.
+2. getPayable(bookingId, userId) for Member 6's payment check with hold expiration and status checks.
+3. confirmPaid(bookingId, paymentId) called by payment webhook after Stripe confirms, with up to 5 retry attempts on duplicate reference, clearing holdExpiresAt, and emitting in-app notification BOOKING_CONFIRMED.
+4. findOneFor(user, id) with hotel population and ACC-11 ownership verification (owner or admin).
+5. GET /api/hotel-bookings/:id endpoint in HotelBookingsController.
+
+How the output was used:
+Added makeReference, getPayable, confirmPaid, and findOneFor to HotelBookingsService.
+Added @Get(':id') route with Swagger documentation to HotelBookingsController.
+Imported NotificationsModule in HotelBookingsModule. Verified clean build.
+==================================================

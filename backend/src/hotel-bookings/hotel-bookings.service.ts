@@ -1,7 +1,9 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Cron, CronExpression } from '@nestjs/schedule';
@@ -17,6 +19,9 @@ import {
 import { Room, RoomDocument } from '../hotels/schemas/room.schema';
 import { Hotel, HotelDocument } from '../hotels/schemas/hotel.schema';
 import { BookingStatus } from '../common/enums/booking-status.enum';
+import { NotificationType } from '../common/enums/notification-type.enum';
+import { Role } from '../common/enums/role.enum';
+import { NotificationsService } from '../notifications/notifications.service';
 import { HotelSearchService } from '../hotels/hotel-search.service';
 import { CreateHotelBookingDto } from './dto/create-hotel-booking.dto';
 import { eachNight, nightsBetween, overlaps } from './stay.util';
@@ -36,6 +41,7 @@ export class HotelBookingsService {
     @InjectModel(Hotel.name)
     private hotels: Model<HotelDocument>,
     private readonly search: HotelSearchService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   /** Releases the claimed nights of one booking (expiry or cancellation). */
@@ -168,5 +174,70 @@ export class HotelBookingsService {
       await this.release(bookingId);
       throw e;
     }
+  }
+
+  private makeReference() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    return (
+      'HB-' +
+      Array.from({ length: 6 }, () =>
+        chars[Math.floor(Math.random() * chars.length)],
+      ).join('')
+    );
+  }
+
+  /** Member 6 calls this before creating a payment. */
+  async getPayable(bookingId: string, userId: string) {
+    const b = await this.bookings.findOne({ _id: bookingId, user: userId });
+    if (!b) throw new NotFoundException('Reservation not found');
+    if (
+      b.status !== BookingStatus.PENDING_PAYMENT ||
+      (b.holdExpiresAt && b.holdExpiresAt <= new Date())
+    ) {
+      throw new ConflictException(
+        'This reservation is no longer waiting for payment',
+      );
+    }
+    return { amount: b.totalPrice, currency: b.currency, status: b.status };
+  }
+
+  /** Called by the payment webhook (Member 6) after Stripe confirmed. All rooms confirm together. */
+  async confirmPaid(bookingId: string, paymentId: string) {
+    for (let attempt = 0; attempt < 5; attempt++) {
+      try {
+        const b = await this.bookings.findOneAndUpdate(
+          { _id: bookingId, status: BookingStatus.PENDING_PAYMENT },
+          {
+            status: BookingStatus.CONFIRMED,
+            reference: this.makeReference(),
+            paymentId,
+            $unset: { holdExpiresAt: 1 },
+          },
+          { returnDocument: 'after' },
+        );
+        if (!b) return null; // expired meanwhile: Member 6 refunds
+        await this.notifications.notify(
+          b.user,
+          NotificationType.BOOKING_CONFIRMED,
+          'Hotel reservation confirmed',
+          { bookingId: b.id, reference: b.reference },
+        );
+        return b; // the room-night claims already exist, so the rooms stay reserved
+      } catch (e: any) {
+        if (e?.code !== 11000) throw e;
+      }
+    }
+    throw new ConflictException('Could not generate a unique reference');
+  }
+
+  async findOneFor(user: UserDocument, id: string) {
+    const b = await this.bookings
+      .findById(id)
+      .populate('hotel', 'name address city country checkInTime checkOutTime');
+    if (!b) throw new NotFoundException('Reservation not found');
+    if (b.user.toString() !== user.id && user.role !== Role.ADMIN) {
+      throw new ForbiddenException('Not your reservation'); // ACC-11
+    }
+    return b;
   }
 }
