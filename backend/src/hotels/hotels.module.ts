@@ -15,7 +15,10 @@ import { HotelsService } from './hotels.service';
 import { HotelsController } from './hotels.controller';
 
 import { RoomsService } from './rooms.service';
-import { RoomsController, HotelAvailabilityController } from './rooms.controller';
+import {
+  RoomsController,
+  HotelAvailabilityController,
+} from './rooms.controller';
 
 import { AvailabilityService } from './availability.service';
 

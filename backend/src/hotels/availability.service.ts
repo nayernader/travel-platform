@@ -1,3 +1,4 @@
+
 import {
   BadRequestException,
   ConflictException,
@@ -9,7 +10,7 @@ import {
   InjectModel,
 } from '@nestjs/mongoose';
 
-import { Connection, Model, Types } from 'mongoose';
+import { Connection, Model } from 'mongoose';
 
 import { RoomsService } from './rooms.service';
 
@@ -21,12 +22,41 @@ import {
 
 import { findRoomConflicts } from './room-conflicts';
 
-import { Room } from './schemas/room.schema';
+import {
+  Room,
+  RoomDocument,
+} from './schemas/room.schema';
 
 import type { UserDocument } from '../users/schemas/user.schema';
 
-const day = (s: string) =>
-  new Date(`${s.slice(0, 10)}T00:00:00.000Z`);
+const day = (value: string): Date => {
+  const dateFormat = /^\d{4}-\d{2}-\d{2}$/;
+
+  if (!dateFormat.test(value)) {
+    throw new BadRequestException(
+      'Incorrect date format. Use YYYY-MM-DD.',
+    );
+  }
+
+  const [year, month, date] = value.split('-').map(Number);
+
+  const parsedDate = new Date(
+    Date.UTC(year, month - 1, date),
+  );
+
+  // Reject impossible dates such as February 30.
+  if (
+    parsedDate.getUTCFullYear() !== year ||
+    parsedDate.getUTCMonth() !== month - 1 ||
+    parsedDate.getUTCDate() !== date
+  ) {
+    throw new BadRequestException(
+      'Incorrect date format. Use YYYY-MM-DD.',
+    );
+  }
+
+  return parsedDate;
+};
 
 const overlaps = (
   a: { start: Date; end: Date },
@@ -67,7 +97,7 @@ export class AvailabilityService {
     private connection: Connection,
 
     @InjectModel(Room.name)
-    private roomModel: Model<Room>,
+    private roomModel: Model<RoomDocument>,
   ) {}
 
   /** HTL-04 and HTL-06: add a bookable range or a blocked range. */
@@ -186,9 +216,7 @@ export class AvailabilityService {
     }
 
     const rooms = await this.roomModel
-      .find({
-        hotel: new Types.ObjectId(hotelId),
-      })
+      .find({ hotel: hotelId })
       .sort({ roomNumber: 1 });
 
     const result = [];
@@ -213,6 +241,7 @@ export class AvailabilityService {
 
       let status = 'AVAILABLE';
 
+      // A reservation takes priority over a blocked range.
       if (bookings.length) {
         status = 'BOOKED';
       } else if (
