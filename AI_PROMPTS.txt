@@ -395,3 +395,24 @@ Added makeReference, getPayable, confirmPaid, and findOneFor to HotelBookingsSer
 Added @Get(':id') route with Swagger documentation to HotelBookingsController.
 Imported NotificationsModule in HotelBookingsModule. Verified clean build.
 ==================================================
+
+
+==================================================
+Date: 2026-11-13
+Student: yasseenahmedya
+Branch: feature/HTL-20-21-22-my-reservations
+Related Requirement: HTL-20, HTL-21, HTL-22, HTL-23, GEN-11
+Tool: Gemini
+Prompt:
+Implement my reservations, refund preview, cancellation, and moderator reservations:
+1. listMine(user, group, page) grouping upcoming, past, cancelled with 10 per page pagination.
+2. refundPreview(user, id) calculating refund percent from hotel cancellation policy tiers and remaining days before check-in.
+3. cancel(user, id) setting status to CANCELLED, releasing room nights, emitting booking.refund.requested event when refundPercent > 0, and sending BOOKING_CANCELLED notification.
+4. listForHotel(user, hotelId, page) verifying moderator manages hotel and returning paginated reservations.
+5. @Cron(CronExpression.EVERY_5_MINUTES) completeFinished() auto-completing confirmed reservations after checkout date.
+6. Add @Get(), @Get(':id/cancel-preview'), and @Post(':id/cancel') to HotelBookingsController.
+7. Create HotelReservationsController with @Get('hotels/:id/reservations').
+
+How the output was used:
+Added methods to HotelBookingsService, routes to HotelBookingsController, created HotelReservationsController, and registered controllers in HotelBookingsModule. Verified clean build.
+==================================================

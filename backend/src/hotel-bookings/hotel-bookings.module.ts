@@ -12,6 +12,7 @@ import { Review, ReviewSchema } from './schemas/review.schema';
 import { HotelsModule } from '../hotels/hotels.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { HotelBookingsController } from './hotel-bookings.controller';
+import { HotelReservationsController } from './hotel-reservations.controller';
 import { HotelBookingsService } from './hotel-bookings.service';
 
 @Module({
@@ -24,7 +25,7 @@ import { HotelBookingsService } from './hotel-bookings.service';
     HotelsModule,
     NotificationsModule,
   ],
-  controllers: [HotelBookingsController],
+  controllers: [HotelBookingsController, HotelReservationsController],
   providers: [HotelBookingsService],
   exports: [MongooseModule, HotelBookingsService],
 })
