@@ -20,7 +20,7 @@ import { PaymentsModule } from './payments/payments.module';
 import { ItinerariesModule } from './itineraries/itineraries.module';
 import { BlogModule } from './blog/blog.module';
 import { UploadsModule } from './uploads/uploads.module';
-
+import { ExchangeRatesModule } from './exchange-rates/exchange-rates.module';
 
 @Module({
   imports: [
@@ -67,6 +67,7 @@ import { UploadsModule } from './uploads/uploads.module';
     ItinerariesModule,
 
     BlogModule,
+    ExchangeRatesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
