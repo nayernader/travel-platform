@@ -1,10 +1,9 @@
 import { Controller, Get, Param, ParseEnumPipe, Post } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { PoliciesService } from './policies.service';
-import { Auth } from '../auth/decorators/auth.decorator';
-import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { UserDocument } from '../users/schemas/user.schema';
-// Add the Auth, CurrentUser and UserDocument imports here (see Step 1)
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { Auth } from '../auth/decorators/auth.decorator';
 
 enum BookingTypeParam {
   flight = 'flight',
