@@ -517,3 +517,22 @@ What the AI produced:
 What I did myself:
 - Pasted and reviewed the code, tested in Swagger, built, committed.
 ==================================================
+
+==================================================
+Date: 2026-11-18
+Member: Member 7
+Branch: feature/ITN-20-21-visibility-search
+Requirements: ITN-20, ITN-21 (and the ACC-12 rule for public itineraries)
+Tool: Claude 
+
+What I asked:
+- Help adding public/private visibility, public search with filters, a read-only public view
+  and cloning, making sure private, hidden and deactivated-owner itineraries are never exposed.
+
+What the AI produced:
+- visibility in the update DTO, search DTO, ItinerarySharingService (aggregation search, public
+  view, deep-copy clone), a public controller registered before the main one, and a clone route.
+
+What I did myself:
+- Pasted and reviewed the code, tested in Swagger with several accounts, built, committed.
+==================================================
