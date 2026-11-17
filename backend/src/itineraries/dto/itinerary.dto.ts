@@ -1,6 +1,17 @@
-import { ApiProperty, PartialType } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { Transform, TransformFnParams } from 'class-transformer';
-import { ArrayMinSize, ArrayUnique, IsArray, IsDateString, IsString, Length, Matches } from 'class-validator';
+import {
+  ArrayMinSize,
+  ArrayUnique,
+  IsArray,
+  IsDateString,
+  IsEnum,
+  IsOptional,
+  IsString,
+  Length,
+  Matches,
+} from 'class-validator';
+import { Visibility } from '../schemas/itinerary.schema';
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 const trim = ({ value }: TransformFnParams) => (typeof value === 'string' ? value.trim() : value);
@@ -28,4 +39,13 @@ export class CreateItineraryDto {
   startDate: string;
 }
 
-export class UpdateItineraryDto extends PartialType(CreateItineraryDto) {}
+export class UpdateItineraryDto extends PartialType(CreateItineraryDto) {
+  @ApiPropertyOptional({
+    enum: Visibility,
+    example: 'PUBLIC',
+    description: 'ITN-20: PUBLIC shows it in shared search (read-only for others), PRIVATE removes it immediately',
+  })
+  @IsOptional()
+  @IsEnum(Visibility)
+  visibility?: Visibility;
+}
