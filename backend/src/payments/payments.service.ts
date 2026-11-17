@@ -9,6 +9,7 @@ import { PoliciesService } from './policies.service';
 import { STRIPE } from './stripe.provider';
 import { CreatePaymentDto } from './dto/payment.dto';
 import type { UserDocument } from '../users/schemas/user.schema';
+import { RefundsService } from './refunds.service';
 
 @Injectable()
 export class PaymentsService {
@@ -19,6 +20,7 @@ export class PaymentsService {
     @Inject(STRIPE) private stripe: Stripe,
     private readonly port: BookingPort,
     private readonly policies: PoliciesService,
+        private readonly refunds: RefundsService,
   ) {}
 
   async create(user: UserDocument, dto: CreatePaymentDto) {
@@ -109,7 +111,8 @@ export class PaymentsService {
       await p.save();
       const booking = await this.port.confirmPaid(p.bookingType as any, p.bookingId.toString(), intent.id);
       if (!booking) {
-        this.log.warn(`Paid ${intent.id} but booking ${p.bookingId} is no longer pending`);
+                this.log.warn(`Paid ${intent.id} but booking ${p.bookingId} is no longer pending: refunding`);
+        await this.refunds.refundNow(p, p.amount);
       }
     } else if (event.type === 'payment_intent.payment_failed') {
       const intent = event.data.object as Stripe.PaymentIntent;
@@ -117,7 +120,10 @@ export class PaymentsService {
         { stripePaymentIntentId: intent.id, status: { $ne: PaymentStatus.SUCCEEDED } },
         { status: PaymentStatus.FAILED, failureMessage: intent.last_payment_error?.message },
       );
+      } else if (event.type === 'refund.updated') {
+      await this.refunds.syncFromStripe(event.data.object as Stripe.Refund);
     }
+    
   }
 
   /** PAY-01: when the hold has expired the PaymentIntent is cancelled. */
