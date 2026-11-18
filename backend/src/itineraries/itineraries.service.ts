@@ -51,6 +51,7 @@ export class ItinerariesService {
     }
     if (dto.title !== undefined) it.title = dto.title;
     if (dto.startDate) it.startDate = toStartDate(dto.startDate); // day dates follow automatically
+    if (dto.visibility !== undefined) it.visibility = dto.visibility; // ITN-20
     await it.save();
     return toItineraryView(it);
   }
