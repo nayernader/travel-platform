@@ -466,7 +466,7 @@ Date: 2026-11-17
 Member: Member 7
 Branch: feature/ITN-05-07-08-09-days
 Requirements: ITN-05, ITN-07, ITN-08, ITN-09
-Tool: Claude (
+Tool: Claude (git checkout -b feature/ITN-10-12-activities
 
 What I asked:
 - Help adding days to an itinerary: add (max 60, city from the reference data), edit city and notes,
@@ -475,6 +475,25 @@ What I asked:
 What the AI produced:
 - day DTOs, ItineraryDaysService (add, update, remove, reorder with renumbering), ItineraryDaysController
   (route order so "reorder" is not read as a day id), and the updated module.
+
+What I did myself:
+- Pasted and reviewed the code, tested in Swagger, built, committed.
+==================================================
+
+==================================================
+Date: 2026-11-17
+Member: Member 7
+Branch: feature/ITN-10-12-activities
+Requirements: ITN-10, ITN-12
+Tool: Claude 
+
+What I asked:
+- Help adding activities to an itinerary day (name, description, optional time and cost) and
+  attaching/removing images using the shared upload service.
+
+What the AI produced:
+- activity DTOs, ItineraryActivitiesService (add, edit, delete, add/remove images with ownership
+  through the itinerary), two controllers (nested add, flat edit/delete/images routes as in the project PDF).
 
 What I did myself:
 - Pasted and reviewed the code, tested in Swagger, built, committed.
