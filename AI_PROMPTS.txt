@@ -536,3 +536,18 @@ What the AI produced:
 What I did myself:
 - Pasted and reviewed the code, tested in Swagger with several accounts, built, committed.
 ==================================================
+
+==================================================
+Date: 2026-11-18
+Member: Ahmed Hossam
+Branch: feature/ITN-18-budget-currency
+Requirements: ITN-18 (and the totals of ITN-14, subtotals of ITN-09)
+Tool: Claude
+What I asked:
+- Help building the itinerary budget summary: totals by category, by day and by city group,
+ converted to the user's preferred currency with the shared exchange-rate service.
+What the AI produced:
+- ItineraryBudgetSummaryService, its controller and the updated module.
+What I did myself:
+- Pasted and reviewed the code, tested in Swagger, built, committed.
+==================================================
