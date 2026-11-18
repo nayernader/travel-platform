@@ -498,3 +498,22 @@ What the AI produced:
 What I did myself:
 - Pasted and reviewed the code, tested in Swagger, built, committed.
 ==================================================
+
+==================================================
+Date: 2026-11-17
+Member: Member 7
+Branch: feature/ITN-14-16-budgets-transport
+Requirements: ITN-14, ITN-16
+Tool: Claude 
+
+What I asked:
+- Help adding budget entries per day (food, accommodation, in-city transport, activities) and
+  intercity transport costs to an itinerary, following the endpoint list in the project PDF.
+
+What the AI produced:
+- budget and transport DTOs, ItineraryBudgetsService (add, edit, delete, move a transport cost
+  to another day), three controllers (nested add, flat edit/delete routes).
+
+What I did myself:
+- Pasted and reviewed the code, tested in Swagger, built, committed.
+==================================================
