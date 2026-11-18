@@ -551,3 +551,19 @@ What the AI produced:
 What I did myself:
 - Pasted and reviewed the code, tested in Swagger, built, committed.
 ==================================================
+
+==================================================
+Date: 2026-11-18
+Member: Ahmed Hossam
+Branch: feature/ITN-25-26-hotel-flight-suggestions
+Requirements: ITN-25, ITN-26
+Tool: Claude
+What I asked:
+- Help adding hotel suggestions for a city group of an itinerary and flight suggestions to the
+ city of the first day, reusing the existing hotel and flight search services.
+What the AI produced:
+- query DTOs, ItinerarySuggestionsService (dates from the city group, one flight search per
+ airport of the destination city), its controller and the updated module.
+What I did myself:
+- Pasted and reviewed the code, tested in Swagger, built, committed.
+==================================================

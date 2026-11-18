@@ -4,6 +4,8 @@ import { Itinerary, ItinerarySchema } from './schemas/itinerary.schema';
 import { User, UserSchema } from '../users/schemas/user.schema';
 import { UploadsModule } from '../uploads/uploads.module';
 import { ExchangeRatesModule } from '../exchange-rates/exchange-rates.module';
+import { HotelsModule } from '../hotels/hotels.module';
+import { FlightsModule } from '../flights/flights.module';
 import { ItinerariesService } from './itineraries.service';
 import { ItinerariesController } from './itineraries.controller';
 import { ItineraryDaysService } from './itinerary-days.service';
@@ -20,6 +22,8 @@ import { ItinerarySharingService } from './itinerary-sharing.service';
 import { PublicItinerariesController, ItineraryCloneController } from './itinerary-sharing.controller';
 import { ItineraryBudgetSummaryService } from './itinerary-budget-summary.service';
 import { ItineraryBudgetSummaryController } from './itinerary-budget-summary.controller';
+import { ItinerarySuggestionsService } from './itinerary-suggestions.service';
+import { ItinerarySuggestionsController } from './itinerary-suggestions.controller';
 
 @Module({
   imports: [
@@ -29,6 +33,8 @@ import { ItineraryBudgetSummaryController } from './itinerary-budget-summary.con
     ]),
     UploadsModule,
     ExchangeRatesModule,
+    HotelsModule, // exports HotelSearchService
+    FlightsModule, // exports FlightsService
   ],
   controllers: [
     PublicItinerariesController, // must come before ItinerariesController ("public" is not an :id)
@@ -40,6 +46,7 @@ import { ItineraryBudgetSummaryController } from './itinerary-budget-summary.con
     BudgetsController,
     TransportCostsController,
     ItineraryBudgetSummaryController,
+    ItinerarySuggestionsController,
     ItineraryCloneController,
   ],
   providers: [
@@ -49,6 +56,7 @@ import { ItineraryBudgetSummaryController } from './itinerary-budget-summary.con
     ItineraryBudgetsService,
     ItinerarySharingService,
     ItineraryBudgetSummaryService,
+    ItinerarySuggestionsService,
   ],
   exports: [
     ItinerariesService,
@@ -57,6 +65,7 @@ import { ItineraryBudgetSummaryController } from './itinerary-budget-summary.con
     ItineraryBudgetsService,
     ItinerarySharingService,
     ItineraryBudgetSummaryService,
+    ItinerarySuggestionsService,
     MongooseModule,
   ],
 })
