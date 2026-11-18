@@ -3,6 +3,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Itinerary, ItinerarySchema } from './schemas/itinerary.schema';
 import { User, UserSchema } from '../users/schemas/user.schema';
 import { UploadsModule } from '../uploads/uploads.module';
+import { ExchangeRatesModule } from '../exchange-rates/exchange-rates.module';
 import { ItinerariesService } from './itineraries.service';
 import { ItinerariesController } from './itineraries.controller';
 import { ItineraryDaysService } from './itinerary-days.service';
@@ -17,6 +18,8 @@ import {
 } from './itinerary-budgets.controller';
 import { ItinerarySharingService } from './itinerary-sharing.service';
 import { PublicItinerariesController, ItineraryCloneController } from './itinerary-sharing.controller';
+import { ItineraryBudgetSummaryService } from './itinerary-budget-summary.service';
+import { ItineraryBudgetSummaryController } from './itinerary-budget-summary.controller';
 
 @Module({
   imports: [
@@ -25,6 +28,7 @@ import { PublicItinerariesController, ItineraryCloneController } from './itinera
       { name: User.name, schema: UserSchema },
     ]),
     UploadsModule,
+    ExchangeRatesModule,
   ],
   controllers: [
     PublicItinerariesController, // must come before ItinerariesController ("public" is not an :id)
@@ -35,6 +39,7 @@ import { PublicItinerariesController, ItineraryCloneController } from './itinera
     ItineraryBudgetRoutesController,
     BudgetsController,
     TransportCostsController,
+    ItineraryBudgetSummaryController,
     ItineraryCloneController,
   ],
   providers: [
@@ -43,6 +48,7 @@ import { PublicItinerariesController, ItineraryCloneController } from './itinera
     ItineraryActivitiesService,
     ItineraryBudgetsService,
     ItinerarySharingService,
+    ItineraryBudgetSummaryService,
   ],
   exports: [
     ItinerariesService,
@@ -50,6 +56,7 @@ import { PublicItinerariesController, ItineraryCloneController } from './itinera
     ItineraryActivitiesService,
     ItineraryBudgetsService,
     ItinerarySharingService,
+    ItineraryBudgetSummaryService,
     MongooseModule,
   ],
 })
