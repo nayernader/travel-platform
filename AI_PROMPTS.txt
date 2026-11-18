@@ -443,3 +443,20 @@ Implement hotel reviews and ratings feature according to Member 5 guide:
 How the output was used:
 Created review.dto.ts, reviews.service.ts, reviews.controller.ts, updated review.schema.ts to ensure proper Types.ObjectId typing, and registered them in HotelBookingsModule. Verified clean build.
 ==================================================
+==================================================
+Date: 2026-11-17
+Member: Member 7
+Branch: feature/ITN-01-03-itinerary-crud
+Requirements: ITN-01, ITN-03
+Tool: Claude 
+
+What I asked:
+- Help building the itinerary schema (embedded days, activities, budget entries, transport costs),
+  create/edit/delete/list my itineraries with ownership checks, adapted to the repo's shared helpers.
+
+What the AI produced:
+- itinerary.schema.ts, itinerary.view.ts (derived day dates and city groups), DTOs, service, controller, module.
+
+What I did myself:
+- Pasted and reviewed the code, tested in Swagger, built, committed.
+==================================================
