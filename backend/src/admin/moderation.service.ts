@@ -55,6 +55,22 @@ export class ModerationService {
     return buildPage(items, total, page);
   }
 
+  /**
+   * GEN-10: hidden content stays visible to admins. Returns any post, comment, review or itinerary,
+   * hidden or not, with its open reports so the admin can decide.
+   */
+  async getContent(type: TargetType, id: string) {
+    const doc: any = await this.target(type, id);
+    if (!doc) throw new NotFoundException('Content not found');
+    if (type === 'post' || type === 'comment') await doc.populate('author', 'name email');
+    else await doc.populate('user', 'name email');
+    const openReports = await this.reports
+      .find({ targetType: type, targetId: doc._id, status: ReportStatus.OPEN })
+      .sort({ createdAt: 1 })
+      .populate('reporter', 'name email');
+    return { type, content: doc, openReports };
+  }
+
   /** GEN-10: hide or delete one piece of content, keep counters right, close its reports and tell its author. */
   async applyToContent(admin: UserDocument, type: TargetType, id: string, action: 'hide' | 'delete') {
     const doc: any = await this.target(type, id);

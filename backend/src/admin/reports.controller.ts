@@ -42,6 +42,14 @@ export class ReportsController {
   }
 
   @Auth(Role.ADMIN)
+  @Get('admin/content/:type/:id')
+  @ApiParam({ name: 'type', enum: ContentType })
+  @ApiOperation({ summary: 'View any post, comment, review or itinerary, including hidden ones, with its open reports (GEN-10)' })
+  view(@Param('type', new ParseEnumPipe(ContentType)) type: ContentType, @Param('id') id: string) {
+    return this.moderation.getContent(type, id);
+  }
+
+  @Auth(Role.ADMIN)
   @Patch('admin/content/:type/:id/hide')
   @ApiParam({ name: 'type', enum: ContentType })
   @ApiOperation({ summary: 'Hide any post, comment, review or itinerary directly (GEN-10)' })
