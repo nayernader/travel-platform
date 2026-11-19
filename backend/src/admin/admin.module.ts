@@ -6,6 +6,8 @@ import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
 import { AdminAccountsController } from './admin-accounts.controller';
 import { AdminAccountsService } from './admin-accounts.service';
+import { AdminProvidersController } from './admin-providers.controller';
+import { AdminProvidersService } from './admin-providers.service';
 import { ModerationService } from './moderation.service';
 import { ReportsController } from './reports.controller';
 import { Report, ReportSchema } from './schemas/report.schema';
@@ -17,7 +19,7 @@ import { Report, ReportSchema } from './schemas/report.schema';
     JwtModule.register({}), // JwtService for the @Auth() guard
     MongooseModule.forFeature([{ name: Report.name, schema: ReportSchema }]),
   ],
-  controllers: [AdminController, AdminAccountsController, ReportsController],
-  providers: [AdminService, AdminAccountsService, ModerationService],
+  controllers: [AdminController, AdminAccountsController, ReportsController, AdminProvidersController],
+  providers: [AdminService, AdminAccountsService, ModerationService, AdminProvidersService],
 })
 export class AdminModule {}
