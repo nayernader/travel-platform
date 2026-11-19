@@ -37,7 +37,7 @@ const VERIFICATION_TTL_MS = 15 * 60 * 1000; // ACC-02: the code is valid for 15 
 const VERIFICATION_MAX_ATTEMPTS = 5; // wrong tries before the code is thrown away
 const VERIFICATION_RESEND_MS = 60 * 1000; // at least 60 seconds between emails
 
-const RESET_TTL_MS = 15 * 60 * 1000; // ACC-07: the code is valid for 15 minutes
+const RESET_TTL_MS = 30 * 60 * 1000; // ACC-07: the code is valid for 30 minutes
 const RESET_MAX_ATTEMPTS = 5; // wrong tries before the code is thrown away
 const RESET_COOLDOWN_MS = 60 * 1000; // at least 60 seconds between reset emails
 
