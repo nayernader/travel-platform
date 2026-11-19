@@ -567,3 +567,20 @@ What the AI produced:
 What I did myself:
 - Pasted and reviewed the code, tested in Swagger, built, committed.
 ==================================================
+
+================================================
+Date: 2026-11-19
+Student: Ahmed Hossam
+Tool: Claude
+Related Requirement: ACC-02
+Prompt:
+Implement email verification for registration: a random token whose hash is
+stored, an email with a verification code sent from SMTP settings in .env,
+a public verify-email endpoint, and blocking of booking and payment routes
+for unverified users.
+
+How the output was used:
+Used the token flow, mail service and guard check as a base. I reviewed it,
+set the SMTP values in my own .env, and tested register, verify, reuse,
+expiry and login in Swagger.
+================================================

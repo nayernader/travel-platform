@@ -29,6 +29,25 @@ export class UsersService {
   findByEmail(email: string) {
     return this.userModel.findOne({ email: email.toLowerCase().trim() });
   }
+  
+  /** ACC-02: loads the hidden verification fields too. */
+  findByEmailWithVerification(email: string) {
+    return this.userModel
+      .findOne({ email: email.toLowerCase().trim() })
+      .select('+emailVerificationCodeHash +emailVerificationExpiresAt +emailVerificationAttempts +emailVerificationSentAt');
+  }
+
+  /** ACC-02: marks the account verified and wipes the code. */
+  markEmailVerified(id: string) {
+    return this.userModel.findOneAndUpdate(
+      { _id: id, emailVerified: false },
+      {
+        $set: { emailVerified: true, emailVerificationAttempts: 0 },
+        $unset: { emailVerificationCodeHash: 1, emailVerificationExpiresAt: 1, emailVerificationSentAt: 1 },
+      },
+      { returnDocument: 'after' },
+    );
+  }
 
   findById(id: string) {
     return this.userModel.findById(id);
@@ -101,6 +120,7 @@ export class UsersService {
       status: user.status,
       mustChangePassword: user.mustChangePassword,
       createdAt: (user as UserDocument & { createdAt?: Date }).createdAt,
+      emailVerified: user.emailVerified,
     };
   }
 }

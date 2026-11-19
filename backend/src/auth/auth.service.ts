@@ -1,5 +1,5 @@
 import {
-  BadRequestException,   // NEW
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   HttpException,
@@ -10,7 +10,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { createHash } from 'crypto';
+import { createHash, randomInt } from 'crypto';
 import type { CookieOptions, Request, Response } from 'express';
 import {
   ACCESS_COOKIE,
@@ -27,6 +27,13 @@ import { UsersService } from '../users/users.service';
 import { ChangePasswordDto } from './dto/change-password.dto'; // NEW
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { MailService } from '../mail/mail.service';
+import { ResendVerificationDto } from './dto/resend-verification.dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
+
+const VERIFICATION_TTL_MS = 15 * 60 * 1000; // ACC-02: the code is valid for 15 minutes
+const VERIFICATION_MAX_ATTEMPTS = 5; // wrong tries before the code is thrown away
+const VERIFICATION_RESEND_MS = 60 * 1000; // at least 60 seconds between emails
 
 @Injectable()
 export class AuthService {
@@ -34,24 +41,94 @@ export class AuthService {
     private readonly users: UsersService,
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
+    private readonly mail: MailService,
   ) {}
 
-  // ACC-01
+  // ACC-01, ACC-02
   async register(dto: RegisterDto) {
     const existing = await this.users.findByEmail(dto.email);
     if (existing) throw new ConflictException('Email is already registered');
 
     const passwordHash = await bcrypt.hash(dto.password, 10); // GEN-13: salted hash
+    const code = this.newCode();
     const user = await this.users.create({
       name: dto.name,
       email: dto.email,
       passwordHash,
       consentAcceptedAt: new Date(),
+      emailVerified: false,
+      emailVerificationCodeHash: this.hash(code), // only the hash is stored
+      emailVerificationExpiresAt: new Date(Date.now() + VERIFICATION_TTL_MS),
+      emailVerificationSentAt: new Date(),
       // role is always USER here: nobody can self-register as admin or moderator
     });
+
+    await this.mail.sendVerificationCode(user.email, user.name, code);
     return this.users.toResponse(user);
   }
 
+  // ACC-02: checks the 6-digit code. Wrong, expired and used codes all get a clear 400.
+  async verifyEmail(dto: VerifyEmailDto) {
+    const user = await this.users.findByEmailWithVerification(dto.email);
+    const invalid = new BadRequestException('The code is invalid or has expired');
+    if (!user) throw invalid; // same answer as a wrong code, so emails are not revealed
+
+    if (user.emailVerified) throw new BadRequestException('This email is already verified');
+    if (!user.emailVerificationCodeHash || !user.emailVerificationExpiresAt) {
+      throw new BadRequestException('No active code. Request a new one.');
+    }
+    if (user.emailVerificationExpiresAt.getTime() <= Date.now()) {
+      throw new BadRequestException('The code has expired. Request a new one.');
+    }
+
+    if (this.hash(dto.code) !== user.emailVerificationCodeHash) {
+      const attempts = (user.emailVerificationAttempts ?? 0) + 1;
+      if (attempts >= VERIFICATION_MAX_ATTEMPTS) {
+        await this.users.updateById(user.id, {
+          $set: { emailVerificationAttempts: 0 },
+          $unset: { emailVerificationCodeHash: 1, emailVerificationExpiresAt: 1 },
+        });
+        throw new BadRequestException('Too many wrong codes. Request a new one.');
+      }
+      await this.users.updateById(user.id, { $set: { emailVerificationAttempts: attempts } });
+      throw invalid;
+    }
+
+    const verified = await this.users.markEmailVerified(user.id);
+    if (!verified) throw new BadRequestException('This email is already verified');
+    return { verified: true, message: 'Your email address is verified' };
+  }
+
+  // ACC-02: sends a new code (the old one stops working). Same answer whether or not the email exists.
+  async resendVerification(dto: ResendVerificationDto) {
+    const generic = { message: 'If the account exists and is not verified, a new code was sent' };
+    const user = await this.users.findByEmailWithVerification(dto.email);
+    if (!user || user.emailVerified) return generic;
+
+    if (
+      user.emailVerificationSentAt &&
+      Date.now() - user.emailVerificationSentAt.getTime() < VERIFICATION_RESEND_MS
+    ) {
+      throw new HttpException('Please wait a minute before requesting another code', HttpStatus.TOO_MANY_REQUESTS);
+    }
+
+    const code = this.newCode();
+    await this.users.updateById(user.id, {
+      $set: {
+        emailVerificationCodeHash: this.hash(code),
+        emailVerificationExpiresAt: new Date(Date.now() + VERIFICATION_TTL_MS),
+        emailVerificationAttempts: 0,
+        emailVerificationSentAt: new Date(),
+      },
+    });
+    await this.mail.sendVerificationCode(user.email, user.name, code);
+    return generic;
+  }
+
+  // 6 random digits, cryptographically secure, leading zeros kept
+  private newCode(): string {
+    return String(randomInt(0, 1_000_000)).padStart(6, '0');
+  }
   // ACC-04, ACC-05
   async login(dto: LoginDto, res: Response) {
     const invalid = new UnauthorizedException('Invalid email or password'); // generic on purpose
