@@ -30,10 +30,16 @@ import { RegisterDto } from './dto/register.dto';
 import { MailService } from '../mail/mail.service';
 import { ResendVerificationDto } from './dto/resend-verification.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 const VERIFICATION_TTL_MS = 15 * 60 * 1000; // ACC-02: the code is valid for 15 minutes
 const VERIFICATION_MAX_ATTEMPTS = 5; // wrong tries before the code is thrown away
 const VERIFICATION_RESEND_MS = 60 * 1000; // at least 60 seconds between emails
+
+const RESET_TTL_MS = 15 * 60 * 1000; // ACC-07: the code is valid for 15 minutes
+const RESET_MAX_ATTEMPTS = 5; // wrong tries before the code is thrown away
+const RESET_COOLDOWN_MS = 60 * 1000; // at least 60 seconds between reset emails
 
 @Injectable()
 export class AuthService {
@@ -125,6 +131,60 @@ export class AuthService {
     return generic;
   }
 
+    // ACC-07: always the same answer, whether or not the email exists or the account can be reset
+  async forgotPassword(dto: ForgotPasswordDto) {
+    const generic = { message: 'If an account with that email exists, a reset code was sent' };
+
+    const user = await this.users.findByEmailWithReset(dto.email);
+    if (!user || user.status !== UserStatus.ACTIVE) return generic; // suspended or deactivated: no code
+
+    // too soon after the last email: do nothing, and answer the same (no 429, so nothing is revealed)
+    if (user.passwordResetSentAt && Date.now() - user.passwordResetSentAt.getTime() < RESET_COOLDOWN_MS) {
+      return generic;
+    }
+
+    const code = this.newCode();
+    await this.users.updateById(user.id, {
+      $set: {
+        passwordResetCodeHash: this.hash(code), // only the hash is stored
+        passwordResetExpiresAt: new Date(Date.now() + RESET_TTL_MS),
+        passwordResetAttempts: 0,
+        passwordResetSentAt: new Date(),
+      },
+    });
+    await this.mail.sendPasswordResetCode(user.email, user.name, code);
+    return generic;
+  }
+
+  // ACC-07: checks the code and sets the new password. Wrong, expired and used codes all get a 400.
+  async resetPassword(dto: ResetPasswordDto) {
+    const invalid = new BadRequestException('The code is invalid or has expired');
+
+    const user = await this.users.findByEmailWithReset(dto.email);
+    if (!user || user.status !== UserStatus.ACTIVE) throw invalid; // same answer as a wrong code
+    if (!user.passwordResetCodeHash || !user.passwordResetExpiresAt) throw invalid;
+    if (user.passwordResetExpiresAt.getTime() <= Date.now()) throw invalid;
+
+    const codeHash = this.hash(dto.code);
+    if (codeHash !== user.passwordResetCodeHash) {
+      const attempts = (user.passwordResetAttempts ?? 0) + 1;
+      if (attempts >= RESET_MAX_ATTEMPTS) {
+        await this.users.updateById(user.id, {
+          $set: { passwordResetAttempts: 0 },
+          $unset: { passwordResetCodeHash: 1, passwordResetExpiresAt: 1 },
+        });
+        throw new BadRequestException('Too many wrong codes. Request a new one.');
+      }
+      await this.users.updateById(user.id, { $set: { passwordResetAttempts: attempts } });
+      throw invalid;
+    }
+
+    const passwordHash = await bcrypt.hash(dto.newPassword, 10); // GEN-13: salted hash
+    const done = await this.users.completePasswordReset(user.id, codeHash, passwordHash);
+    if (!done) throw invalid; // used or expired between the check and the update
+    return { reset: true, message: 'Your password was changed. Log in with the new password.' };
+  }
+  
   // 6 random digits, cryptographically secure, leading zeros kept
   private newCode(): string {
     return String(randomInt(0, 1_000_000)).padStart(6, '0');

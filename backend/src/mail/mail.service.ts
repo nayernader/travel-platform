@@ -47,4 +47,26 @@ export class MailService {
       return false;
     }
   }
+
+  /** ACC-07: returns true if the email was sent. Never throws. */
+  async sendPasswordResetCode(to: string, name: string, code: string): Promise<boolean> {
+    if (!this.transporter) return false;
+    try {
+      await this.transporter.sendMail({
+        from: this.from,
+        to,
+        subject: 'Your password reset code',
+        text: `Hello ${name},\n\nYour password reset code is: ${code}\n\nIt is valid for 15 minutes and can be used once. If you did not ask for it, ignore this email: your password has not changed.\n`,
+        html:
+          `<p>Hello ${escapeHtml(name)},</p>` +
+          `<p>Your password reset code is:</p>` +
+          `<p style="font-size:28px;letter-spacing:6px"><b>${code}</b></p>` +
+          `<p>It is valid for 15 minutes and can be used once. If you did not ask for it, ignore this email: your password has not changed.</p>`,
+      });
+      return true;
+    } catch (err) {
+      this.logger.error('Could not send the password reset email', err as Error);
+      return false;
+    }
+  }
 }
