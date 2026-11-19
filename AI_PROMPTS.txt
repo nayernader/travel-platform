@@ -601,3 +601,19 @@ Used the code flow, atomic reset update and throttling as a base. I
 reviewed it, set the SMTP values in my own .env, and tested forgot, reset,
 reuse, expiry, lockout and suspended accounts in Swagger.
 ================================================
+
+================================================
+Date: 2026-11-19
+Student: Ahmed Hossam
+Tool: Claude
+Related Requirement: GEN-01 (email notifications bonus)
+Prompt:
+Send an email alongside the existing in-app notifications for booking,
+refund, flight change and account or provider status events, reusing the
+mail service, without ever breaking the main action.
+
+How the output was used:
+Used the single hook in NotificationsService.notify and the subject map as
+a base. I reviewed it, tested it with a mail test inbox, with SMTP empty
+and with a wrong SMTP password in Swagger.
+================================================

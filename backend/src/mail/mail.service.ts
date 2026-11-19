@@ -69,4 +69,22 @@ export class MailService {
       return false;
     }
   }
+
+  /** GEN-01 bonus: one generic email for an in-app notification. Never throws. */
+  async sendNotificationEmail(to: string, name: string, subject: string, message: string): Promise<boolean> {
+    if (!this.transporter) return false;
+    try {
+      await this.transporter.sendMail({
+        from: this.from,
+        to,
+        subject,
+        text: `Hello ${name},\n\n${message}\n`,
+        html: `<p>Hello ${escapeHtml(name)},</p><p>${escapeHtml(message)}</p>`,
+      });
+      return true;
+    } catch (err) {
+      this.logger.error('Could not send the notification email', err as Error);
+      return false;
+    }
+  }
 }
