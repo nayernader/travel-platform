@@ -608,3 +608,17 @@ What the AI produced:
 What I did myself:
 - Reviewed the code against the Member 8 guide and the repo, built, tested in Swagger, committed.
 ==================================================
+
+==================================================
+Date: 2026-11-19
+Member: fady (Member 8)
+Branch: feature/BLG-05-06-07-comments-likes
+Requirements: BLG-05, BLG-06, BLG-07
+Tool: Claude
+What I asked:
+- Implement comments on published posts (1-500 chars) with edit/delete by the author, and like-once/unlike with like counts.
+What the AI produced:
+- CommentDto, InteractionsService (atomic $addToSet likes, commentCount kept in sync) and InteractionsController.
+What I did myself:
+- Reviewed the code against the Member 8 guide and the repo, built, tested in Swagger, committed.
+==================================================
