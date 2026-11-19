@@ -636,3 +636,17 @@ What the AI produced:
 What I did myself:
 - Reviewed the code against the Member 8 guide and the repo, built, tested in Swagger, committed.
 ==================================================
+
+==================================================
+Date: 2026-11-19
+Member: fady (Member 8)
+Branch: feature/GEN-09-10-reports-moderation
+Requirements: GEN-09, GEN-10
+Tool: Claude
+What I asked:
+- Implement content reports (post, comment, review, itinerary; once per user and item) and admin moderation: list open reports, dismiss/hide/delete, and direct hide/delete with audit log and notification.
+What the AI produced:
+- Report schema, report DTOs, ModerationService (also keeps commentCount and hotel ratings correct and closes other open reports on the same item) and ReportsController.
+What I did myself:
+- Reviewed the code against the Member 8 guide and the repo, built, tested in Swagger, committed.
+==================================================
