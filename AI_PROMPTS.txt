@@ -594,3 +594,17 @@ What the AI produced:
 What I did myself:
 - Reviewed the code against the Member 8 guide and the repo, built, tested in Swagger, committed.
 ==================================================
+
+==================================================
+Date: 2026-11-19
+Member: fady (Member 8)
+Branch: feature/BLG-02-09-browse-search
+Requirements: BLG-02, BLG-08 (tag list), BLG-09
+Tool: Claude
+What I asked:
+- Implement public browsing of published posts with a tag filter, the post page with comments, and keyword search (title, tags, author) ordered by likes + comments.
+What the AI produced:
+- BlogPublicService and BlogPublicController; fixed the controller order so GET /posts/mine is not caught by GET /posts/:id.
+What I did myself:
+- Reviewed the code against the Member 8 guide and the repo, built, tested in Swagger, committed.
+==================================================
