@@ -4,6 +4,7 @@ import * as bcrypt from 'bcrypt';
 import { Connection, Types } from 'mongoose';
 import { AuditService } from '../audit/audit.service';
 import { AuditAction } from '../common/enums/audit-action.enum';
+import { BookingStatus } from '../common/enums/booking-status.enum';
 import { NotificationType } from '../common/enums/notification-type.enum';
 import { Role } from '../common/enums/role.enum';
 import { UserStatus } from '../common/enums/user-status.enum';
@@ -97,6 +98,42 @@ export class AdminProvidersService {
         ),
       ),
     );
-    return { id, type, name: provider.name, isActive: active };
+
+    // ACC-15: also tell the travellers with active bookings (affected parties)
+    const travellers = await this.affectedTravellers(type, provider._id);
+    await Promise.all(
+      travellers.map((userId) =>
+        this.notifications.notify(
+          userId,
+          NotificationType.PROVIDER_STATUS_CHANGED,
+          active
+            ? `The ${type} ${provider.name} was reactivated by an administrator.`
+            : `The ${type} ${provider.name} was deactivated by an administrator. Your confirmed bookings remain valid; new bookings are not possible.`,
+          { providerType: type, providerId: id, isActive: active },
+        ),
+      ),
+    );
+    return { id, type, name: provider.name, isActive: active, notifiedModerators: mods.length, notifiedTravellers: travellers.length };
+  }
+
+  /**
+   * Users with a Pending Payment or Confirmed booking that is not over yet:
+   * a flight not departed yet, or a hotel stay not checked out yet.
+   * Team contracts: FlightBooking, HotelBooking, Flight are read by model name.
+   */
+  private async affectedTravellers(type: ProviderType, providerId: Types.ObjectId): Promise<Types.ObjectId[]> {
+    const now = new Date();
+    const status = { $in: [BookingStatus.PENDING_PAYMENT, BookingStatus.CONFIRMED] };
+    if (type === 'airline') {
+      if (!this.connection.modelNames().includes('FlightBooking')) return [];
+      const flightIds = await this.connection
+        .model('Flight')
+        .find({ airline: providerId, departureTimeUtc: { $gt: now } })
+        .distinct('_id');
+      if (!flightIds.length) return [];
+      return this.connection.model('FlightBooking').distinct('user', { status, 'segments.flight': { $in: flightIds } });
+    }
+    if (!this.connection.modelNames().includes('HotelBooking')) return [];
+    return this.connection.model('HotelBooking').distinct('user', { status, hotel: providerId, checkOut: { $gt: now } });
   }
 }
