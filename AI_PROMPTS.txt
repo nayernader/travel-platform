@@ -622,3 +622,17 @@ What the AI produced:
 What I did myself:
 - Reviewed the code against the Member 8 guide and the repo, built, tested in Swagger, committed.
 ==================================================
+
+==================================================
+Date: 2026-11-19
+Member: fady (Member 8)
+Branch: feature/BLG-10-12-images-author-page
+Requirements: BLG-10, BLG-12
+Tool: Claude
+What I asked:
+- Implement attaching/removing post images with the shared upload service (GEN-08), and the public author page with published posts and public itineraries.
+What the AI produced:
+- PostImagesController (max 5 images, removal by URL or file name) and AuthorsController (Itinerary read by model name).
+What I did myself:
+- Reviewed the code against the Member 8 guide and the repo, built, tested in Swagger, committed.
+==================================================
