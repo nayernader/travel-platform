@@ -567,3 +567,16 @@ What the AI produced:
 What I did myself:
 - Pasted and reviewed the code, tested in Swagger, built, committed.
 ==================================================
+==================================================
+Date: 2026-11-19
+Member: fady (Member 8)
+Branch: feature/BLG-01-post-crud
+Requirements: BLG-01, BLG-03, BLG-04, BLG-08
+Tool: Claude
+What I asked:
+- Implement the Post and Comment schemas, create/edit/delete posts with tags (max 5, 30 chars) and draft/publish, and the my-posts list, following the Member 8 guide.
+What the AI produced:
+- Post and Comment schemas, post DTOs with tag cleaning, PostsService, PostsController and BlogModule.
+What I did myself:
+- Reviewed the code against the Member 8 guide and the repo, built, tested in Swagger, committed.
+==================================================
