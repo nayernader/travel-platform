@@ -650,3 +650,17 @@ What the AI produced:
 What I did myself:
 - Reviewed the code against the Member 8 guide and the repo, built, tested in Swagger, committed.
 ==================================================
+
+==================================================
+Date: 2026-11-19
+Member: fady (Member 8)
+Branch: feature/ACC-13-15-moderator-accounts
+Requirements: ACC-13, ACC-15 (providers)
+Tool: Claude
+What I asked:
+- Implement admin creation of airline/hotel moderators linked to one provider with a temporary password, and deactivate/reactivate of airlines and hotels with audit log and notifications.
+What the AI produced:
+- CreateModeratorDto, AdminProvidersService (uses passwordHash and mustChangePassword from the User schema) and AdminProvidersController.
+What I did myself:
+- Reviewed the code against the Member 8 guide and the repo, built, tested in Swagger, committed.
+==================================================
