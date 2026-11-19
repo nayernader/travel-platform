@@ -4,6 +4,8 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { UsersModule } from '../users/users.module';
 import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
+import { AdminBookingsController } from './admin-bookings.controller';
+import { AdminBookingsService } from './admin-bookings.service';
 import { AdminAccountsController } from './admin-accounts.controller';
 import { AdminAccountsService } from './admin-accounts.service';
 import { AdminProvidersController } from './admin-providers.controller';
@@ -19,7 +21,19 @@ import { Report, ReportSchema } from './schemas/report.schema';
     JwtModule.register({}), // JwtService for the @Auth() guard
     MongooseModule.forFeature([{ name: Report.name, schema: ReportSchema }]),
   ],
-  controllers: [AdminController, AdminAccountsController, ReportsController, AdminProvidersController],
-  providers: [AdminService, AdminAccountsService, ModerationService, AdminProvidersService],
+  controllers: [
+    AdminController,
+    AdminAccountsController,
+    ReportsController,
+    AdminProvidersController,
+    AdminBookingsController,
+  ],
+  providers: [
+    AdminService,
+    AdminAccountsService,
+    ModerationService,
+    AdminProvidersService,
+    AdminBookingsService,
+  ],
 })
 export class AdminModule {}
