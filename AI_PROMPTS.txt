@@ -664,3 +664,17 @@ What the AI produced:
 What I did myself:
 - Reviewed the code against the Member 8 guide and the repo, built, tested in Swagger, committed.
 ==================================================
+
+==================================================
+Date: 2026-11-19
+Member: fady (Member 8)
+Branch: feature/ACC-17-admin-bookings
+Requirements: ACC-17
+Tool: Claude
+What I asked:
+- Implement the admin read-only list of all flight and hotel bookings with type, status and travel-date filters, 10 per page.
+What the AI produced:
+- ListBookingsDto, AdminBookingsService (correct merged pagination; date filter applied in the query on the first flight's departure or the hotel check-in) and AdminBookingsController.
+What I did myself:
+- Reviewed the code against the Member 8 guide and the repo, built, tested in Swagger, committed.
+==================================================
