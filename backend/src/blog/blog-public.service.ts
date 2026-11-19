@@ -48,28 +48,53 @@ export class BlogPublicService {
     };
   }
 
-  /** The post page: title, author, date, body, tags, images, like count and comments oldest first (BLG-02, BLG-05). */
-  async findOne(id: string) {
-    if (!Types.ObjectId.isValid(id)) throw new NotFoundException('Post not found');
-    const p: any = await this.posts.findOne({ _id: id, ...visible }).populate('author', 'name');
-    if (!p) throw new NotFoundException('Post not found');
-    const comments = await this.comments
-      .find({ post: p._id, hidden: false })
-      .sort({ createdAt: 1 })
-      .populate('author', 'name');
+  /**
+   * The post page: title, author, date, body, tags, images, like count (BLG-02)
+   * and one page of comments, oldest first (BLG-05, GEN-05: 10 per page).
+   */
+  async findOne(id: string, commentsPage = 1) {
+    const p: any = await this.visiblePost(id);
     return {
       ...this.card(p),
       body: p.body,
       images: p.images,
-      comments: comments.map((c: any) => ({
-        _id: c.id,
-        text: c.text,
-        author: c.author?.name,
-        authorId: c.author?._id,
-        createdAt: c.createdAt,
-        updatedAt: c.updatedAt,
-      })),
+      comments: await this.commentPage(p._id, commentsPage),
     };
+  }
+
+  /** BLG-05: comments of a published post, oldest first, 10 per page (GEN-05). */
+  async listComments(id: string, page = 1) {
+    const p = await this.visiblePost(id);
+    return this.commentPage(p._id, page);
+  }
+
+  private async visiblePost(id: string) {
+    if (!Types.ObjectId.isValid(id)) throw new NotFoundException('Post not found');
+    const p = await this.posts.findOne({ _id: id, ...visible }).populate('author', 'name');
+    if (!p) throw new NotFoundException('Post not found');
+    return p;
+  }
+
+  private async commentPage(postId: Types.ObjectId, page: number) {
+    const filter = { post: postId, hidden: false };
+    const [rows, total] = await Promise.all([
+      this.comments
+        .find(filter)
+        .sort({ createdAt: 1 })
+        .skip(getSkip(page))
+        .limit(PAGE_SIZE)
+        .populate('author', 'name'),
+      this.comments.countDocuments(filter),
+    ]);
+    const items = rows.map((c: any) => ({
+      _id: c.id,
+      text: c.text,
+      author: c.author?.name,
+      authorId: c.author?._id,
+      createdAt: c.createdAt,
+      updatedAt: c.updatedAt,
+    }));
+    return buildPage(items, total, page);
   }
 
   /** BLG-09: keyword in title, tags or author name. Ordered by likes + comments, newest first as tie-breaker. */

@@ -42,8 +42,16 @@ export class BlogPublicController {
   }
 
   @Get('posts/:id')
-  @ApiOperation({ summary: 'Post page: body, tags, images, like count and comments (BLG-02)' })
-  one(@Param('id') id: string) {
-    return this.pub.findOne(id);
+  @ApiOperation({ summary: 'Post page: body, tags, images, like count and the first page of comments (BLG-02, BLG-05)' })
+  @ApiQuery({ name: 'commentsPage', required: false, description: 'Page of comments, 10 per page' })
+  one(@Param('id') id: string, @Query('commentsPage') commentsPage = '1') {
+    return this.pub.findOne(id, Number(commentsPage) || 1);
+  }
+
+  @Get('posts/:id/comments')
+  @ApiOperation({ summary: 'Comments of a published post, oldest first, 10 per page (BLG-05, GEN-05)' })
+  @ApiQuery({ name: 'page', required: false })
+  comments(@Param('id') id: string, @Query('page') page = '1') {
+    return this.pub.listComments(id, Number(page) || 1);
   }
 }
