@@ -678,3 +678,17 @@ What the AI produced:
 What I did myself:
 - Reviewed the code against the Member 8 guide and the repo, built, tested in Swagger, committed.
 ==================================================
+
+==================================================
+Date: 2026-11-19
+Member: fady (Member 8)
+Branch: fixes on BLG-02-09, BLG-10-12, GEN-09-10, ACC-13-15
+Requirements: GEN-05, BLG-05, BLG-12, GEN-10, ACC-15
+Tool: Claude
+What I asked:
+- Check every Member 8 task against the requirements and the guide's final checklist, then fix the gaps: comments and author page paginated 10 per page, admins can view hidden content, travellers with active bookings notified when a provider is deactivated.
+What the AI produced:
+- The four fix commits (each on the branch it belongs to) and the tests that check them.
+What I did myself:
+- Reviewed the code against the Member 8 guide and the repo, built, tested in Swagger, committed.
+==================================================
