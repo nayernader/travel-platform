@@ -11,7 +11,7 @@ How the output was used:
 ================================================
 ==================================================
 Date: 2026-11-05
-Member: Member 1 (Team leader)
+Member: Nayer Nader (Team leader)
 Branch: feature/ACC-08-09-change-password-profile
 Requirements: ACC-08, ACC-09, ACC-07a, ACC-13
 Tool: Claude (AI assistant)
@@ -41,7 +41,7 @@ No secrets (connection string, JWT secrets, passwords, API keys) were shared wit
 
 ==================================================
 Date: 2026-11-08
-Member: Member 3
+Member:  Philopateer George Refaat
 Branch: feature/FLT-11-15-17-flight-search
 Requirements: FLT-11 (search by route, local date, passengers, pagination)
 Tool: Claude 
@@ -77,7 +77,7 @@ What I did myself:
 
 ==================================================
 Date: 2026-11-08
-Member: Member 3
+Member:  Philopateer George Refaat
 Branch: feature/FLT-11-15-17-flight-search
 Requirements: FLT-15 (price filter and sorting), FLT-12 part (c) (cabin class filter)
 Tool: Claude 
@@ -105,7 +105,7 @@ What I did myself:
 
 ==================================================
 Date: 2026-11-08
-Member: Member 3
+Member: Philopateer George Refaat
 Branch: feature/FLT-11-15-17-flight-search
 Requirements: FLT-17 (flight details)
 Tool: Claude 
@@ -129,7 +129,7 @@ What I did myself:
 
 ==================================================
 Date: 2026-11-08
-Member: Member 3
+Member:  Philopateer George Refaat
 Branch: feature/FLT-19-21-passengers-summary
 Requirements: FLT-19 (passenger details and extra baggage), FLT-21 (booking summary before payment), FLT-12 part (b) (passenger types)
 Tool: Claude
@@ -153,7 +153,7 @@ What I did myself:
 
 ==================================================
 Date: 2026-11-08
-Member: Member 3
+Member:  Philopateer George Refaat
 Branch: feature/FLT-22-seat-hold
 Requirements: FLT-22 (atomic seat hold, 10-minute expiry), GEN-11 (booking status lifecycle)
 Tool: Claude
@@ -177,7 +177,7 @@ What I did myself:
 
 ==================================================
 Date: 2026-11-08
-Member: Member 3
+Member:  Philopateer George Refaat
 Branch: feature/FLT-23-confirm-booking
 Requirements: FLT-23 (confirm after payment, booking reference, notification, e-ticket)
 Tool: Claude
@@ -445,7 +445,7 @@ Created review.dto.ts, reviews.service.ts, reviews.controller.ts, updated review
 ==================================================
 ==================================================
 Date: 2026-11-17
-Member: Member 7
+Member:  Philopateer George Refaat
 Branch: feature/ITN-01-03-itinerary-crud
 Requirements: ITN-01, ITN-03
 Tool: Claude 
@@ -463,7 +463,7 @@ What I did myself:
 
 ==================================================
 Date: 2026-11-17
-Member: Member 7
+Member:  Philopateer George Refaat
 Branch: feature/ITN-05-07-08-09-days
 Requirements: ITN-05, ITN-07, ITN-08, ITN-09
 Tool: Claude (git checkout -b feature/ITN-10-12-activities
@@ -482,7 +482,7 @@ What I did myself:
 
 ==================================================
 Date: 2026-11-17
-Member: Member 7
+Member:  Philopateer George Refaat
 Branch: feature/ITN-10-12-activities
 Requirements: ITN-10, ITN-12
 Tool: Claude 
@@ -501,7 +501,7 @@ What I did myself:
 
 ==================================================
 Date: 2026-11-17
-Member: Member 7
+Member: Philopateer George Refaat
 Branch: feature/ITN-14-16-budgets-transport
 Requirements: ITN-14, ITN-16
 Tool: Claude 
@@ -520,7 +520,7 @@ What I did myself:
 
 ==================================================
 Date: 2026-11-18
-Member: Member 7
+Member: Philopateer George Refaat
 Branch: feature/ITN-20-21-visibility-search
 Requirements: ITN-20, ITN-21 (and the ACC-12 rule for public itineraries)
 Tool: Claude 
@@ -567,3 +567,27 @@ What the AI produced:
 What I did myself:
 - Pasted and reviewed the code, tested in Swagger, built, committed.
 ==================================================
+
+================================================
+Date: 2026-11-19
+Student: Philopateer George Refaat
+Tool: Claude
+Related Requirement: ITN-28 (optional bonus)
+Prompt:
+I want to add the optional itinerary PDF export (GET /api/itineraries/:id/pdf).
+Keep any business rules from the project PDF as they are. For anything the PDF
+does not specify, let me choose. (I chose: the owner can always export, other
+logged-in users can export only public non-hidden itineraries, and the PDF
+contains the trip plan plus the budget summary.)
+
+How the output was used:
+Used the suggested design and code for the export: a new ItineraryPdfService
+and ItineraryPdfController built with pdfkit, a summaryFor() method in the
+budget summary service so the budget can be reused for an itinerary that is
+already access-checked, and making findPublic() in the sharing service
+callable so non-owners only get public, non-hidden itineraries of active
+owners. I reviewed the code, pasted it into the project myself and checked
+the result in Swagger.
+================================================
+
+================================================
