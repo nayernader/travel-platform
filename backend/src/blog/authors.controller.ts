@@ -1,8 +1,9 @@
-import { Controller, Get, NotFoundException, Param } from '@nestjs/common';
+import { Controller, Get, NotFoundException, Param, Query } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { Connection, Model, Types } from 'mongoose';
 import { UserStatus } from '../common/enums/user-status.enum';
+import { buildPage, getSkip, PAGE_SIZE } from '../common/utils/pagination';
 import { Post, PostDocument, PostStatus } from './schemas/post.schema';
 
 @ApiTags('Blog')
@@ -14,30 +15,61 @@ export class AuthorsController {
   ) {}
 
   @Get(':id')
-  @ApiOperation({ summary: 'Public author page: name, join date, published posts, public itineraries (BLG-12)' })
-  async author(@Param('id') id: string) {
+  @ApiOperation({
+    summary: 'Public author page: name, join date, published posts and public itineraries, 10 per page each (BLG-12)',
+  })
+  @ApiQuery({ name: 'postsPage', required: false })
+  @ApiQuery({ name: 'itinerariesPage', required: false })
+  async author(
+    @Param('id') id: string,
+    @Query('postsPage') postsPage = '1',
+    @Query('itinerariesPage') itinerariesPage = '1',
+  ) {
     if (!Types.ObjectId.isValid(id)) throw new NotFoundException('Author not found');
     const user: any = await this.connection.model('User').findById(id).select('name createdAt status');
     if (!user || user.status === UserStatus.DEACTIVATED) throw new NotFoundException('Author not found');
 
+    const pPage = Number(postsPage) || 1;
+    const iPage = Number(itinerariesPage) || 1;
+    const postFilter = { author: user._id, status: PostStatus.PUBLISHED, hidden: false };
+    const itFilter = { user: user._id, visibility: 'PUBLIC', hidden: false };
     // The Itinerary model (team contract) is read by name; empty if it is not registered
-    const itineraries = this.connection.modelNames().includes('Itinerary')
-      ? this.connection
-          .model('Itinerary')
-          .find({ user: id, visibility: 'PUBLIC', hidden: false })
-          .sort({ updatedAt: -1 })
-          .limit(50)
-          .select('title countries startDate')
-      : Promise.resolve([]);
+    const hasItineraries = this.connection.modelNames().includes('Itinerary');
+    const itineraries = hasItineraries ? this.connection.model('Itinerary') : undefined;
 
-    const [posts, publicItineraries] = await Promise.all([
+    const [postRows, postTotal, itRows, itTotal] = await Promise.all([
       this.posts
-        .find({ author: id, status: PostStatus.PUBLISHED, hidden: false })
+        .find(postFilter)
         .sort({ createdAt: -1 })
-        .limit(50)
-        .select('title tags createdAt'),
-      itineraries,
+        .skip(getSkip(pPage))
+        .limit(PAGE_SIZE)
+        .select('title tags createdAt likes commentCount'),
+      this.posts.countDocuments(postFilter),
+      itineraries
+        ? itineraries
+            .find(itFilter)
+            .sort({ updatedAt: -1 })
+            .skip(getSkip(iPage))
+            .limit(PAGE_SIZE)
+            .select('title countries startDate')
+        : [],
+      itineraries ? itineraries.countDocuments(itFilter) : 0,
     ]);
-    return { id, name: user.name, joinedAt: user.createdAt, posts, itineraries: publicItineraries };
+
+    const posts = postRows.map((p: any) => ({
+      _id: p.id,
+      title: p.title,
+      tags: p.tags,
+      createdAt: p.createdAt,
+      likeCount: p.likes.length,
+      commentCount: p.commentCount,
+    }));
+    return {
+      id,
+      name: user.name,
+      joinedAt: user.createdAt,
+      posts: buildPage(posts, postTotal, pPage),
+      itineraries: buildPage(itRows as any[], itTotal, iPage),
+    };
   }
 }
