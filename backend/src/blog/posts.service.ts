@@ -33,7 +33,10 @@ export class PostsService {
   // BLG-04, BLG-08: edit title, body, tags or status
   async update(user: UserDocument, id: string, dto: UpdatePostDto) {
     const post = await this.getOwned(user, id);
-    Object.assign(post, dto);
+    // Only the fields that were sent: the DTO instance also carries undefined keys for the others
+    for (const [key, value] of Object.entries(dto)) {
+      if (value !== undefined) post.set(key, value);
+    }
     return post.save();
   }
 
