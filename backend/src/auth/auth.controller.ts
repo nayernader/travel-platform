@@ -61,7 +61,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'Ask for a password reset code by email',
     description:
-      'ACC-07. Public. Always answers the same, whether or not the email exists. The code is valid for 15 minutes. Limited to 5 requests per minute per IP, and one email per minute per account.',
+      'ACC-07. Public. Always answers the same, whether or not the email exists. The code is valid for 30 minutes. Limited to 5 requests per minute per IP, and one email per minute per account.',
   })
   @ApiResponse({ status: 200, description: 'Generic answer: a code was sent if the account exists' })
   @ApiResponse({ status: 400, description: 'Invalid email format' })
@@ -75,7 +75,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'Set a new password with the code from the email',
     description:
-      'ACC-07. Public. The code is single-use and valid for 15 minutes. After 5 wrong tries it must be requested again. All sessions are logged out.',
+      'ACC-07. Public. The code is single-use and valid for 30 minutes. After 5 wrong tries it must be requested again. All sessions are logged out.',
   })
   @ApiResponse({ status: 200, description: 'Password changed' })
   @ApiResponse({ status: 400, description: 'The code is wrong, expired or already used, or the new password is too weak' })
