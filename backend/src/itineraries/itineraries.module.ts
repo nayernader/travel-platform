@@ -24,12 +24,20 @@ import { ItineraryBudgetSummaryService } from './itinerary-budget-summary.servic
 import { ItineraryBudgetSummaryController } from './itinerary-budget-summary.controller';
 import { ItinerarySuggestionsService } from './itinerary-suggestions.service';
 import { ItinerarySuggestionsController } from './itinerary-suggestions.controller';
+import { FlightBooking, FlightBookingSchema } from '../flight-bookings/schemas/flight-booking.schema';
+import { HotelBooking, HotelBookingSchema } from '../hotel-bookings/schemas/hotel-booking.schema';
+import { ItineraryBookingsService } from './itinerary-bookings.service';
+import { ItineraryBookingsController } from './itinerary-bookings.controller';
+import { ItineraryPdfService } from './itinerary-pdf.service';
+import { ItineraryPdfController } from './itinerary-pdf.controller';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: Itinerary.name, schema: ItinerarySchema },
       { name: User.name, schema: UserSchema },
+      { name: FlightBooking.name, schema: FlightBookingSchema },
+      { name: HotelBooking.name, schema: HotelBookingSchema },
     ]),
     UploadsModule,
     ExchangeRatesModule,
@@ -48,6 +56,8 @@ import { ItinerarySuggestionsController } from './itinerary-suggestions.controll
     ItineraryBudgetSummaryController,
     ItinerarySuggestionsController,
     ItineraryCloneController,
+    ItineraryBookingsController,
+    ItineraryPdfController,
   ],
   providers: [
     ItinerariesService,
@@ -57,7 +67,10 @@ import { ItinerarySuggestionsController } from './itinerary-suggestions.controll
     ItinerarySharingService,
     ItineraryBudgetSummaryService,
     ItinerarySuggestionsService,
+    ItineraryBookingsService,
+    ItineraryPdfService,
   ],
+
   exports: [
     ItinerariesService,
     ItineraryDaysService,

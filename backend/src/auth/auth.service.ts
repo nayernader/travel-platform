@@ -274,6 +274,122 @@ export class AuthService {
     return createHash('sha256').update(value).digest('hex');
   }
 
+  // ACC-02: checks the 6-digit code. Wrong, expired and used codes all get a clear 400.
+  async verifyEmail(dto: VerifyEmailDto) {
+    const user = await this.users.findByEmailWithVerification(dto.email);
+    const invalid = new BadRequestException('The code is invalid or has expired');
+    if (!user) throw invalid; // same answer as a wrong code, so emails are not revealed
+
+    if (user.emailVerified) throw new BadRequestException('This email is already verified');
+    if (!user.emailVerificationCodeHash || !user.emailVerificationExpiresAt) {
+      throw new BadRequestException('No active code. Request a new one.');
+    }
+    if (user.emailVerificationExpiresAt.getTime() <= Date.now()) {
+      throw new BadRequestException('The code has expired. Request a new one.');
+    }
+
+    if (this.hash(dto.code) !== user.emailVerificationCodeHash) {
+      const attempts = (user.emailVerificationAttempts ?? 0) + 1;
+      if (attempts >= VERIFICATION_MAX_ATTEMPTS) {
+        await this.users.updateById(user.id, {
+          $set: { emailVerificationAttempts: 0 },
+          $unset: { emailVerificationCodeHash: 1, emailVerificationExpiresAt: 1 },
+        });
+        throw new BadRequestException('Too many wrong codes. Request a new one.');
+      }
+      await this.users.updateById(user.id, { $set: { emailVerificationAttempts: attempts } });
+      throw invalid;
+    }
+
+    const verified = await this.users.markEmailVerified(user.id);
+    if (!verified) throw new BadRequestException('This email is already verified');
+    return { verified: true, message: 'Your email address is verified' };
+  }
+
+  // ACC-02: sends a new code (the old one stops working). Same answer whether or not the email exists.
+  async resendVerification(dto: ResendVerificationDto) {
+    const generic = { message: 'If the account exists and is not verified, a new code was sent' };
+    const user = await this.users.findByEmailWithVerification(dto.email);
+    if (!user || user.emailVerified) return generic;
+
+    if (
+      user.emailVerificationSentAt &&
+      Date.now() - user.emailVerificationSentAt.getTime() < VERIFICATION_RESEND_MS
+    ) {
+      throw new HttpException('Please wait a minute before requesting another code', HttpStatus.TOO_MANY_REQUESTS);
+    }
+
+    const code = this.newCode();
+    await this.users.updateById(user.id, {
+      $set: {
+        emailVerificationCodeHash: this.hash(code),
+        emailVerificationExpiresAt: new Date(Date.now() + VERIFICATION_TTL_MS),
+        emailVerificationAttempts: 0,
+        emailVerificationSentAt: new Date(),
+      },
+    });
+    await this.mail.sendVerificationCode(user.email, user.name, code);
+    return generic;
+  }
+
+    // ACC-07: always the same answer, whether or not the email exists or the account can be reset
+  async forgotPassword(dto: ForgotPasswordDto) {
+    const generic = { message: 'If an account with that email exists, a reset code was sent' };
+
+    const user = await this.users.findByEmailWithReset(dto.email);
+    if (!user || user.status !== UserStatus.ACTIVE) return generic; // suspended or deactivated: no code
+
+    // too soon after the last email: do nothing, and answer the same (no 429, so nothing is revealed)
+    if (user.passwordResetSentAt && Date.now() - user.passwordResetSentAt.getTime() < RESET_COOLDOWN_MS) {
+      return generic;
+    }
+
+    const code = this.newCode();
+    await this.users.updateById(user.id, {
+      $set: {
+        passwordResetCodeHash: this.hash(code), // only the hash is stored
+        passwordResetExpiresAt: new Date(Date.now() + RESET_TTL_MS),
+        passwordResetAttempts: 0,
+        passwordResetSentAt: new Date(),
+      },
+    });
+    await this.mail.sendPasswordResetCode(user.email, user.name, code);
+    return generic;
+  }
+
+  // ACC-07: checks the code and sets the new password. Wrong, expired and used codes all get a 400.
+  async resetPassword(dto: ResetPasswordDto) {
+    const invalid = new BadRequestException('The code is invalid or has expired');
+
+    const user = await this.users.findByEmailWithReset(dto.email);
+    if (!user || user.status !== UserStatus.ACTIVE) throw invalid; // same answer as a wrong code
+    if (!user.passwordResetCodeHash || !user.passwordResetExpiresAt) throw invalid;
+    if (user.passwordResetExpiresAt.getTime() <= Date.now()) throw invalid;
+
+    const codeHash = this.hash(dto.code);
+    if (codeHash !== user.passwordResetCodeHash) {
+      const attempts = (user.passwordResetAttempts ?? 0) + 1;
+      if (attempts >= RESET_MAX_ATTEMPTS) {
+        await this.users.updateById(user.id, {
+          $set: { passwordResetAttempts: 0 },
+          $unset: { passwordResetCodeHash: 1, passwordResetExpiresAt: 1 },
+        });
+        throw new BadRequestException('Too many wrong codes. Request a new one.');
+      }
+      await this.users.updateById(user.id, { $set: { passwordResetAttempts: attempts } });
+      throw invalid;
+    }
+
+    const passwordHash = await bcrypt.hash(dto.newPassword, 10); // GEN-13: salted hash
+    const done = await this.users.completePasswordReset(user.id, codeHash, passwordHash);
+    if (!done) throw invalid; // used or expired between the check and the update
+    return { reset: true, message: 'Your password was changed. Log in with the new password.' };
+  }
+  
+  // 6 random digits, cryptographically secure, leading zeros kept
+  private newCode(): string {
+    return String(randomInt(0, 1_000_000)).padStart(6, '0');
+  }
   // ACC-04, ACC-05
   async login(dto: LoginDto, res: Response) {
     const invalid = new UnauthorizedException('Invalid email or password');
