@@ -1,8 +1,9 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
-import { ScheduleModule } from '@nestjs/schedule';            // NEW
-import { EventEmitterModule } from '@nestjs/event-emitter';   // NEW
+import { ScheduleModule } from '@nestjs/schedule';      
+import { EventEmitterModule } from '@nestjs/event-emitter';   
+import { ThrottlerModule } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
@@ -22,6 +23,7 @@ import { BlogModule } from './blog/blog.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { ExchangeRatesModule } from './exchange-rates/exchange-rates.module';
 
+
 @Module({
   imports: [
     // Loads .env and makes it available in every module
@@ -34,6 +36,8 @@ import { ExchangeRatesModule } from './exchange-rates/exchange-rates.module';
         uri: config.get<string>('MONGODB_URI'),
       }),
     }),
+
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]), // default; forgot-password sets its own limit
 
     ScheduleModule.forRoot(),       // NEW: cron jobs (hold expiry, flight departed, daily exchange rates)
     EventEmitterModule.forRoot(),   // NEW: events (booking.refund.requested)

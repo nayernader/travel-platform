@@ -79,6 +79,19 @@ export class User {
 
   @Prop({ type: Date, select: false })
   emailVerificationSentAt?: Date;
+
+  // ACC-07: only the SHA-256 hash of the 6-digit reset code is stored
+  @Prop({ type: String, select: false })
+  passwordResetCodeHash?: string;
+
+  @Prop({ type: Date, select: false })
+  passwordResetExpiresAt?: Date;
+
+  @Prop({ type: Number, default: 0, select: false })
+  passwordResetAttempts: number;
+
+  @Prop({ type: Date, select: false })
+  passwordResetSentAt?: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
