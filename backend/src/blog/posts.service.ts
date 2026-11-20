@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { buildPage, getSkip, PAGE_SIZE } from '../common/utils/pagination';
 import type { UserDocument } from '../users/schemas/user.schema';
+import { Itinerary, ItineraryDocument, Visibility } from '../itineraries/schemas/itinerary.schema';
 import { CreatePostDto, UpdatePostDto } from './dto/post.dto';
 import { Comment, CommentDocument } from './schemas/comment.schema';
 import { Post, PostDocument, PostStatus } from './schemas/post.schema';
@@ -14,6 +15,7 @@ export class PostsService {
   constructor(
     @InjectModel(Post.name) public posts: Model<PostDocument>,
     @InjectModel(Comment.name) public comments: Model<CommentDocument>,
+    @InjectModel(Itinerary.name) private itineraries: Model<ItineraryDocument>,
   ) {}
 
   // BLG-01: create as DRAFT (default) or PUBLISHED
@@ -37,6 +39,26 @@ export class PostsService {
     for (const [key, value] of Object.entries(dto)) {
       if (value !== undefined) post.set(key, value);
     }
+    return post.save();
+  }
+
+  /**
+   * BLG-13: attach one of MY public, non-hidden itineraries to MY post, or detach it with null.
+   * Another user's itinerary answers 404 (same as the rest of the API); a private or hidden one 400.
+   */
+  async attachItinerary(user: UserDocument, id: string, itineraryId: string | null) {
+    const post = await this.getOwned(user, id);
+    if (itineraryId === null) {
+      post.itinerary = null;
+      return post.save();
+    }
+    const it = await this.itineraries.findById(itineraryId).select('user visibility hidden');
+    if (!it || it.user.toString() !== user.id) throw new NotFoundException('Itinerary not found');
+    if (it.hidden) throw new BadRequestException('This itinerary was hidden by an administrator');
+    if (it.visibility !== Visibility.PUBLIC) {
+      throw new BadRequestException('Only public itineraries can be attached to a post');
+    }
+    post.itinerary = it._id;
     return post.save();
   }
 

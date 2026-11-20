@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { MongooseModule } from '@nestjs/mongoose';
+import { Itinerary, ItinerarySchema } from '../itineraries/schemas/itinerary.schema';
 import { UploadsModule } from '../uploads/uploads.module';
 import { UsersModule } from '../users/users.module';
 import { AuthorsController } from './authors.controller';
@@ -19,6 +20,7 @@ import { Post, PostSchema } from './schemas/post.schema';
     MongooseModule.forFeature([
       { name: Post.name, schema: PostSchema },
       { name: Comment.name, schema: CommentSchema },
+      { name: Itinerary.name, schema: ItinerarySchema }, // BLG-13: attached itinerary
     ]),
     UsersModule, // UsersService for the @Auth() guard
     JwtModule.register({}), // JwtService for the @Auth() guard

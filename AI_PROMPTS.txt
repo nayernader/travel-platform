@@ -930,3 +930,15 @@ What the AI produced:
 - ReplyReviewDto, the reply sub-document on the Review schema, ReviewsService.reply() (moderator of the review's hotel only, hidden reviews rejected, notification on the first reply), the controller route and the REVIEW_REPLIED notification type.
 What I did myself:
 - Reviewed the code against the project requirements and the repo, created a hotel moderator and tested the reply, the replacement, validation and role checks in Swagger, built, committed. The test review was inserted directly in the database because no hotel stay could be Completed today.
+
+Date: 2026-11-20
+Member: Gaby Ramy
+Branch: feature/BLG-13-blog-itinerary-attach
+Requirements: BLG-13 (optional bonus)
+Tool: Claude
+What I asked:
+- Implement attaching one of my itineraries to my blog post (PATCH /api/posts/:id/itinerary): only the post author who also owns the itinerary, show the itinerary on the post page respecting hidden content (GEN-10), with Swagger docs, README and AI_PROMPTS.txt.
+What the AI produced:
+- An itinerary field on the Post schema, AttachItineraryDto (itineraryId or null to detach), PostsService.attachItinerary(), the PATCH route, and the attached itinerary on GET /posts/:id (days, activities and city groups, without budgets or attached bookings), shown only while it is public and not hidden.
+What I did myself:
+- Reviewed the code against the project requirements and the repo, built it and tested the attach, detach, validation, ownership and visibility cases in Swagger.

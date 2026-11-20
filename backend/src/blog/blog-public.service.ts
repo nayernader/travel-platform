@@ -2,6 +2,8 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { buildPage, getSkip, PAGE_SIZE } from '../common/utils/pagination';
+import { Itinerary, ItineraryDocument, Visibility } from '../itineraries/schemas/itinerary.schema';
+import { toItineraryView } from '../itineraries/itinerary.view';
 import { excerpt } from './posts.service';
 import { Comment, CommentDocument } from './schemas/comment.schema';
 import { Post, PostDocument, PostStatus } from './schemas/post.schema';
@@ -16,6 +18,7 @@ export class BlogPublicService {
   constructor(
     @InjectModel(Post.name) private posts: Model<PostDocument>,
     @InjectModel(Comment.name) private comments: Model<CommentDocument>,
+    @InjectModel(Itinerary.name) private itineraries: Model<ItineraryDocument>,
   ) {}
 
   /** BLG-02 browse, newest first, optional tag filter (also used by GET /tags/:tag/posts, BLG-08). */
@@ -58,7 +61,33 @@ export class BlogPublicService {
       ...this.card(p),
       body: p.body,
       images: p.images,
+      itinerary: await this.attachedItinerary(p.itinerary),
       comments: await this.commentPage(p._id, commentsPage),
+    };
+  }
+
+  /**
+   * BLG-13: the itinerary attached to the post, shown only while it is still PUBLIC and not hidden
+   * (GEN-10); otherwise null. Budgets and attached bookings are private and never included.
+   */
+  private async attachedItinerary(itineraryId?: Types.ObjectId | null) {
+    if (!itineraryId) return null;
+    const it = await this.itineraries.findOne({ _id: itineraryId, visibility: Visibility.PUBLIC, hidden: { $ne: true } });
+    if (!it) return null;
+    const view = toItineraryView(it);
+    return {
+      _id: view._id,
+      title: view.title,
+      countries: view.countries,
+      startDate: view.startDate,
+      days: view.days.map((d) => ({
+        dayNumber: d.dayNumber,
+        date: d.date,
+        city: d.city,
+        notes: d.notes,
+        activities: d.activities,
+      })),
+      groups: view.groups,
     };
   }
 

@@ -4,10 +4,12 @@ import {
   ArrayMaxSize,
   IsArray,
   IsEnum,
+  IsMongoId,
   IsOptional,
   IsString,
   Length,
   MaxLength,
+  ValidateIf,
 } from 'class-validator';
 import { PostStatus } from '../schemas/post.schema';
 
@@ -69,4 +71,17 @@ export class UpdatePostDto {
   @IsOptional()
   @IsEnum(PostStatus)
   status?: PostStatus;
+}
+
+/** BLG-13: attach one of my public itineraries to my post, or send null to detach it. */
+export class AttachItineraryDto {
+  @ApiProperty({
+    example: '6a0000000000000000000001',
+    nullable: true,
+    type: String,
+    description: 'Id of one of my PUBLIC itineraries, or null to remove the attached itinerary',
+  })
+  @ValidateIf((o: AttachItineraryDto) => o.itineraryId !== null)
+  @IsMongoId({ message: 'itineraryId must be a valid id or null' })
+  itineraryId: string | null;
 }

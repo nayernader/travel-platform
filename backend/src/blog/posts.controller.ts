@@ -1,9 +1,9 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
-import { ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ApiBadRequestResponse, ApiNotFoundResponse, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { Auth } from '../auth/decorators/auth.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { UserDocument } from '../users/schemas/user.schema';
-import { CreatePostDto, UpdatePostDto } from './dto/post.dto';
+import { AttachItineraryDto, CreatePostDto, UpdatePostDto } from './dto/post.dto';
 import { PostsService } from './posts.service';
 
 /**
@@ -42,6 +42,20 @@ export class PostsController {
   @ApiOperation({ summary: 'Edit my post, its tags or status (BLG-04, BLG-08)' })
   update(@CurrentUser() user: UserDocument, @Param('id') id: string, @Body() dto: UpdatePostDto) {
     return this.posts.update(user, id, dto);
+  }
+
+  @Auth()
+  @Patch(':id/itinerary')
+  @ApiOperation({
+    summary: 'Attach one of my public itineraries to my post, or send null to detach it (BLG-13, optional)',
+    description:
+      'Only the post author who also owns the itinerary. The itinerary must be PUBLIC and not hidden. ' +
+      'The post page shows it only while it stays public and not hidden (GEN-10).',
+  })
+  @ApiBadRequestResponse({ description: 'Invalid id, private itinerary or hidden itinerary' })
+  @ApiNotFoundResponse({ description: 'Post not found, or the itinerary does not exist / belongs to someone else' })
+  attachItinerary(@CurrentUser() user: UserDocument, @Param('id') id: string, @Body() dto: AttachItineraryDto) {
+    return this.posts.attachItinerary(user, id, dto.itineraryId);
   }
 
   @Auth()
