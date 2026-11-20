@@ -724,3 +724,18 @@ What the AI produced:
 - The four fix commits (each on the branch it belongs to) and the tests that check them.
 What I did myself:
 - Reviewed the code against the Member 8 guide and the repo, built, tested in Swagger, committed.
+
+
+==================================================
+Date: 2026-11-20
+Member: Philopateer George Refaat 
+Branch: feature/ITN-27-attach-bookings
+Requirements: ITN-27 (optional bonus)
+Tool: Claude
+What I asked:
+- Implement attaching my own confirmed flight and hotel bookings to an itinerary (POST /api/itineraries/:id/bookings) with no duplicates and a detach endpoint, stored as an embedded list on the itinerary.
+What the AI produced:
+- AttachBookingDto, ItineraryBookingsService (ownership check, CONFIRMED-only rule, atomic attach and detach), ItineraryBookingsController, the attachedBookings field on the Itinerary schema, and removing attachedBookings from the public itinerary view.
+What I did myself:
+- Reviewed the code against the project requirements and the repo, ran a real Stripe test-mode payment to get a confirmed flight booking, tested attach, duplicate (409), invalid body (400), detach and the public view in Swagger, merged the latest develop and resolved the conflict in itineraries.module.ts with the ITN-28 PDF code, built, committed.
+==================================================
