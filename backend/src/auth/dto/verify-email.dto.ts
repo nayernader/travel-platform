@@ -1,3 +1,4 @@
+
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEmail, Matches } from 'class-validator';
 
@@ -6,7 +7,10 @@ export class VerifyEmailDto {
   @IsEmail()
   email: string;
 
-  @ApiProperty({ example: '482913', description: '6-digit code from the verification email' })
-  @Matches(/^\d{6}$/, { message: 'The code must be exactly 6 digits' })
-  code: string;
+  @ApiProperty({
+    example: 'a1b2c3d4...',
+    description: 'Secure verification token from the email link',
+  })
+  @Matches(/^[a-f0-9]{64}$/i, { message: 'Invalid verification token' })
+  token: string;
 }

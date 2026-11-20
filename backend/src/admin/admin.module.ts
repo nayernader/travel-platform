@@ -13,6 +13,7 @@ import { AdminProvidersService } from './admin-providers.service';
 import { ModerationService } from './moderation.service';
 import { ReportsController } from './reports.controller';
 import { Report, ReportSchema } from './schemas/report.schema';
+import { MailModule } from '../mail/mail.module';
 
 // AuditModule and NotificationsModule are @Global(), so their services are available without importing them here
 @Module({
@@ -20,6 +21,7 @@ import { Report, ReportSchema } from './schemas/report.schema';
     UsersModule, // UsersService (also used by the @Auth() guard)
     JwtModule.register({}), // JwtService for the @Auth() guard
     MongooseModule.forFeature([{ name: Report.name, schema: ReportSchema }]),
+    MailModule,
   ],
   controllers: [
     AdminController,
