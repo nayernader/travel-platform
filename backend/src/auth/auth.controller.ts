@@ -1,15 +1,17 @@
 import { Body, Controller, Get, HttpCode, Patch, Post, Req, Res } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiTags, ApiResponse } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import type { UserDocument } from '../users/schemas/user.schema';
 import { UsersService } from '../users/users.service';
 import { AuthService } from './auth.service';
-import { AllowTemporaryPassword } from './decorators/allow-temporary-password.decorator'; // NEW (ACC-13)
+import { AllowTemporaryPassword } from './decorators/allow-temporary-password.decorator';
 import { Auth } from './decorators/auth.decorator';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { ResendVerificationDto } from './dto/resend-verification.dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -23,6 +25,30 @@ export class AuthController {
   @ApiOperation({ summary: 'Register a new traveler account', description: 'ACC-01' })
   register(@Body() dto: RegisterDto) {
     return this.auth.register(dto);
+  }
+  
+  @Post('verify-email')
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'Verify my email with the 6-digit code',
+    description: 'ACC-02. Public. The code is valid for 15 minutes. After 5 wrong tries it must be requested again.',
+  })
+  @ApiResponse({ status: 200, description: 'Email verified' })
+  @ApiResponse({ status: 400, description: 'The code is wrong, expired or already used' })
+  verifyEmail(@Body() dto: VerifyEmailDto) {
+    return this.auth.verifyEmail(dto);
+  }
+
+  @Post('resend-verification')
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'Send a new 6-digit code',
+    description: 'ACC-02. Public. The old code stops working. One request per minute.',
+  })
+  @ApiResponse({ status: 200, description: 'A new code was sent if the account exists and is not verified' })
+  @ApiResponse({ status: 429, description: 'Too soon after the last email' })
+  resendVerification(@Body() dto: ResendVerificationDto) {
+    return this.auth.resendVerification(dto);
   }
 
   @Post('login')

@@ -11,6 +11,7 @@ import { CreatePaymentDto } from './dto/payment.dto';
 import type { UserDocument } from '../users/schemas/user.schema';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Auth } from '../auth/decorators/auth.decorator';
+import { RequireVerifiedEmail } from '../auth/decorators/require-verified-email.decorator';
 
 @ApiTags('Payments')
 @Controller('payments')
@@ -18,6 +19,7 @@ export class PaymentsController {
   constructor(private readonly payments: PaymentsService, @Inject(STRIPE) private stripe: Stripe) {}
 
   @Auth()
+  @RequireVerifiedEmail()
   @Post()
   @ApiOperation({ summary: 'Create a Stripe PaymentIntent for my Pending Payment booking (PAY-01)' })
   create(@CurrentUser() user: UserDocument, @Body() dto: CreatePaymentDto) {

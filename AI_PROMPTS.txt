@@ -567,7 +567,21 @@ What the AI produced:
 What I did myself:
 - Pasted and reviewed the code, tested in Swagger, built, committed.
 ==================================================
-==================================================
+
+Date: 2026-11-19
+Student: Ahmed Hossam
+Tool: Claude
+Related Requirement: ACC-02
+Prompt:
+Implement email verification for registration: a random token whose hash is
+stored, an email with a verification code sent from SMTP settings in .env,
+a public verify-email endpoint, and blocking of booking and payment routes
+for unverified users.
+
+How the output was used:
+Used the token flow, mail service and guard check as a base. I reviewed it,
+set the SMTP values in my own .env, and tested register, verify, reuse,
+expiry and login in Swagger.
 Date: 2026-11-19
 Member: fady (Member 8)
 Branch: feature/BLG-01-post-crud
@@ -579,9 +593,7 @@ What the AI produced:
 - Post and Comment schemas, post DTOs with tag cleaning, PostsService, PostsController and BlogModule.
 What I did myself:
 - Reviewed the code against the Member 8 guide and the repo, built, tested in Swagger, committed.
-==================================================
 
-==================================================
 Date: 2026-11-19
 Member: fady (Member 8)
 Branch: feature/ACC-14-16-account-management
@@ -593,9 +605,7 @@ What the AI produced:
 - ListAccountsDto, AdminAccountsService and AdminAccountsController, registered in AdminModule.
 What I did myself:
 - Reviewed the code against the Member 8 guide and the repo, built, tested in Swagger, committed.
-==================================================
 
-==================================================
 Date: 2026-11-19
 Member: fady (Member 8)
 Branch: feature/BLG-02-09-browse-search
@@ -607,9 +617,7 @@ What the AI produced:
 - BlogPublicService and BlogPublicController; fixed the controller order so GET /posts/mine is not caught by GET /posts/:id.
 What I did myself:
 - Reviewed the code against the Member 8 guide and the repo, built, tested in Swagger, committed.
-==================================================
 
-==================================================
 Date: 2026-11-19
 Member: fady (Member 8)
 Branch: feature/BLG-05-06-07-comments-likes
@@ -621,9 +629,7 @@ What the AI produced:
 - CommentDto, InteractionsService (atomic $addToSet likes, commentCount kept in sync) and InteractionsController.
 What I did myself:
 - Reviewed the code against the Member 8 guide and the repo, built, tested in Swagger, committed.
-==================================================
 
-==================================================
 Date: 2026-11-19
 Member: fady (Member 8)
 Branch: feature/BLG-10-12-images-author-page
@@ -635,9 +641,7 @@ What the AI produced:
 - PostImagesController (max 5 images, removal by URL or file name) and AuthorsController (Itinerary read by model name).
 What I did myself:
 - Reviewed the code against the Member 8 guide and the repo, built, tested in Swagger, committed.
-==================================================
 
-==================================================
 Date: 2026-11-19
 Member: fady (Member 8)
 Branch: feature/GEN-09-10-reports-moderation
@@ -649,9 +653,7 @@ What the AI produced:
 - Report schema, report DTOs, ModerationService (also keeps commentCount and hotel ratings correct and closes other open reports on the same item) and ReportsController.
 What I did myself:
 - Reviewed the code against the Member 8 guide and the repo, built, tested in Swagger, committed.
-==================================================
 
-==================================================
 Date: 2026-11-19
 Member: fady (Member 8)
 Branch: feature/ACC-13-15-moderator-accounts
@@ -663,9 +665,7 @@ What the AI produced:
 - CreateModeratorDto, AdminProvidersService (uses passwordHash and mustChangePassword from the User schema) and AdminProvidersController.
 What I did myself:
 - Reviewed the code against the Member 8 guide and the repo, built, tested in Swagger, committed.
-==================================================
 
-==================================================
 Date: 2026-11-19
 Member: fady (Member 8)
 Branch: feature/ACC-17-admin-bookings
@@ -677,9 +677,7 @@ What the AI produced:
 - ListBookingsDto, AdminBookingsService (correct merged pagination; date filter applied in the query on the first flight's departure or the hotel check-in) and AdminBookingsController.
 What I did myself:
 - Reviewed the code against the Member 8 guide and the repo, built, tested in Swagger, committed.
-==================================================
 
-==================================================
 Date: 2026-11-19
 Member: fady (Member 8)
 Branch: fixes on BLG-02-09, BLG-10-12, GEN-09-10, ACC-13-15
@@ -691,4 +689,3 @@ What the AI produced:
 - The four fix commits (each on the branch it belongs to) and the tests that check them.
 What I did myself:
 - Reviewed the code against the Member 8 guide and the repo, built, tested in Swagger, committed.
-==================================================
