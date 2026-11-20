@@ -61,6 +61,37 @@ export class User {
   // ACC-01: consent to terms and privacy, stored with a timestamp
   @Prop({ type: Date })
   consentAcceptedAt?: Date;
+
+  // ACC-02: default true, so users created before this feature (and the seeded admin and
+  // admin-created moderators) count as verified. Only self-registration sets it to false.
+  @Prop({ type: Boolean, default: true })
+  emailVerified: boolean;
+
+  // ACC-02: only the SHA-256 hash of the 6-digit code is stored
+  @Prop({ type: String, select: false })
+  emailVerificationCodeHash?: string;
+
+  @Prop({ type: Date, select: false })
+  emailVerificationExpiresAt?: Date;
+
+  @Prop({ type: Number, default: 0, select: false })
+  emailVerificationAttempts: number;
+
+  @Prop({ type: Date, select: false })
+  emailVerificationSentAt?: Date;
+
+  // ACC-07: only the SHA-256 hash of the 6-digit reset code is stored
+  @Prop({ type: String, select: false })
+  passwordResetCodeHash?: string;
+
+  @Prop({ type: Date, select: false })
+  passwordResetExpiresAt?: Date;
+
+  @Prop({ type: Number, default: 0, select: false })
+  passwordResetAttempts: number;
+
+  @Prop({ type: Date, select: false })
+  passwordResetSentAt?: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

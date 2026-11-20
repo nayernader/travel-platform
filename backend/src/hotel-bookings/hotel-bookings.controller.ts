@@ -6,6 +6,7 @@ import { Auth } from '../auth/decorators/auth.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Role } from '../common/enums/role.enum';
 import type { UserDocument } from '../users/schemas/user.schema';
+import { RequireVerifiedEmail } from '../auth/decorators/require-verified-email.decorator';
 
 @ApiTags('Hotel bookings')
 @Controller('hotel-bookings')
@@ -13,6 +14,7 @@ export class HotelBookingsController {
   constructor(private readonly bookings: HotelBookingsService) {}
 
   @Auth(Role.USER)
+  @RequireVerifiedEmail()
   @Post()
   @ApiOperation({
     summary: 'Hold all selected rooms together for 10 minutes (HTL-16, HTL-18)',
