@@ -1,0 +1,27 @@
+
+==================================================
+Date: 2026-11-20
+Member: Member 1 (Team leader)
+Branch: feature/BON-01-02-admin-analytics-favourites
+Requirements: BON-01 (admin analytics), BON-02 (favourites)
+Tool: Claude (AI assistant)
+
+What I asked:
+- Step-by-step help to build the two bonus features from the workbook, based on our real
+  booking, hotel, flight, itinerary and payment schemas.
+
+What the AI produced:
+- BON-01: AdminAnalyticsService (MongoDB aggregation of flight and hotel bookings per airline
+  and hotel: bookings, paid, cancelled, revenue of Confirmed/Completed bookings), the
+  admin-only GET /api/admin/analytics/bookings route and its query DTO.
+- BON-02: the favourites module (schema with a unique index, DTOs, service, controller):
+  POST/GET/DELETE /api/favourites, only active hotels and public non-hidden itineraries.
+- README sections for both.
+
+What I did myself:
+- Collected our schemas for the AI, unzipped and wired the files, built and ran the tests,
+  and tested in Swagger: 201/409/404/400 when saving, the list with available items,
+  delete and 404 on repeat, 401 when logged out; analytics 200 with totals per provider,
+  type filter, 400 for a wrong date range, 403 for a normal user.
+
+No secrets (connection string, JWT secrets, passwords, API keys) were shared with the AI.
