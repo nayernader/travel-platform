@@ -19,6 +19,3 @@ import { AirlinesModule } from '../airlines/airlines.module';
   exports: [MongooseModule, FlightBookingsService],
 })
 export class FlightBookingsModule {}
-
-
-  

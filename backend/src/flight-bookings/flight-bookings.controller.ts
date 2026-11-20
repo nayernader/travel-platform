@@ -1,9 +1,26 @@
-import { Body, Controller, Get, Param, Post, StreamableFile, Query } from '@nestjs/common';
-import { ApiOperation, ApiProduces, ApiResponse, ApiTags } from '@nestjs/swagger';
+
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  StreamableFile,
+  Query,
+} from '@nestjs/common';
+import {
+  ApiOperation,
+  ApiProduces,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 
 import { FlightBookingsService } from './flight-bookings.service';
-import { BookingRequestDto } from './dto/booking.dto';
-import { ListBookingsQueryDto} from './dto/list-bookings-query.dto';
+import {
+  BookingRequestDto,
+  ChangeFlightBookingDto,
+} from './dto/booking.dto';
+import { ListBookingsQueryDto } from './dto/list-bookings-query.dto';
 
 import { Auth } from '../auth/decorators/auth.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -39,7 +56,7 @@ export class FlightBookingsController {
   @ApiOperation({
     summary: 'Hold the seats for 10 minutes and create a Pending Payment booking',
     description:
-      'FLT-22, GEN-11. Same body as the summary. Seats are taken in one atomic update; if payment does not succeed within 10 minutes the booking expires and the seats are released.',
+      'FLT-22, GEN-11. Seats are taken in one atomic update; if payment does not succeed within 10 minutes the booking expires and the seats are released.',
   })
   @ApiResponse({ status: 201, description: 'Booking created in PENDING_PAYMENT with holdExpiresAt' })
   @ApiResponse({ status: 400, description: 'Invalid passengers, baggage or flight cannot be booked' })
@@ -49,6 +66,47 @@ export class FlightBookingsController {
   @ApiResponse({ status: 409, description: 'Not enough seats left (someone else was faster)' })
   hold(@Body() dto: BookingRequestDto, @CurrentUser() user: UserDocument) {
     return this.bookings.hold(dto, user.id);
+  }
+
+  @Auth(Role.USER)
+  @Post(':id/change-preview')
+  @ApiOperation({
+    summary: 'Preview a flight booking change',
+    description:
+      'Checks replacement flights on the same route and cabin and calculates the fare difference without reserving seats or modifying the booking.',
+  })
+  @ApiResponse({ status: 200, description: 'Replacement itinerary and fare difference' })
+  @ApiResponse({ status: 400, description: 'Invalid replacement itinerary' })
+  @ApiResponse({ status: 403, description: 'Only the booking owner can change it' })
+  @ApiResponse({ status: 404, description: 'Booking or flight not found' })
+  @ApiResponse({ status: 409, description: 'Booking cannot be changed or seats are unavailable' })
+  changePreview(
+    @Param('id') id: string,
+    @Body() dto: ChangeFlightBookingDto,
+    @CurrentUser() user: UserDocument,
+  ) {
+    return this.bookings.previewChange(id, user.id, dto);
+  }
+
+  @Auth(Role.USER)
+  @RequireVerifiedEmail()
+  @Post(':id/change')
+  @ApiOperation({
+    summary: 'Request a flight booking change',
+    description:
+      'Reserves replacement seats and stores a pending change. The original confirmed itinerary remains unchanged until the payment/refund process completes.',
+  })
+  @ApiResponse({ status: 201, description: 'Pending booking change created' })
+  @ApiResponse({ status: 400, description: 'Invalid replacement itinerary' })
+  @ApiResponse({ status: 403, description: 'Only the booking owner can change it' })
+  @ApiResponse({ status: 404, description: 'Booking or flight not found' })
+  @ApiResponse({ status: 409, description: 'Booking cannot be changed or replacement seats are unavailable' })
+  requestChange(
+    @Param('id') id: string,
+    @Body() dto: ChangeFlightBookingDto,
+    @CurrentUser() user: UserDocument,
+  ) {
+    return this.bookings.requestChange(id, user.id, dto);
   }
 
   @Auth(Role.USER)
@@ -70,7 +128,8 @@ export class FlightBookingsController {
   @Get(':id/refund-preview')
   @ApiOperation({
     summary: 'See the refund before cancelling',
-    description: 'FLT-26. Uses the airline cancellation tiers and the days left before the outbound flight. Changes nothing.',
+    description:
+      'FLT-26. Uses the airline cancellation tiers and the days left before the outbound flight. Changes nothing.',
   })
   @ApiResponse({ status: 200, description: 'daysRemaining, refundPercent and refundAmount' })
   @ApiResponse({ status: 401, description: 'Not logged in' })
@@ -96,6 +155,7 @@ export class FlightBookingsController {
   cancel(@Param('id') id: string, @CurrentUser() user: UserDocument) {
     return this.bookings.cancel(id, user.id);
   }
+
   @Auth(Role.USER)
   @Get(':id')
   @ApiOperation({
@@ -112,7 +172,10 @@ export class FlightBookingsController {
   @Auth(Role.USER)
   @Get(':id/e-ticket')
   @ApiProduces('application/pdf')
-  @ApiOperation({ summary: 'Download the e-ticket (PDF) of a confirmed booking', description: 'FLT-23' })
+  @ApiOperation({
+    summary: 'Download the e-ticket (PDF) of a confirmed booking',
+    description: 'FLT-23',
+  })
   @ApiResponse({ status: 200, description: 'PDF file' })
   @ApiResponse({ status: 401, description: 'Not logged in' })
   @ApiResponse({ status: 404, description: 'Booking not found (or not yours)' })

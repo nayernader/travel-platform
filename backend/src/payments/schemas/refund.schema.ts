@@ -9,6 +9,11 @@ export enum RefundStatus {
   FAILED = 'FAILED',
 }
 
+export enum RefundPurpose {
+  CANCELLATION = 'CANCELLATION',
+  FLIGHT_CHANGE = 'FLIGHT_CHANGE',
+}
+
 @Schema({ timestamps: true })
 export class Refund {
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true, index: true })
@@ -34,7 +39,39 @@ export class Refund {
 
   @Prop()
   failureReason?: string;
+
+  @Prop({
+    type: String,
+    enum: RefundPurpose,
+    default: RefundPurpose.CANCELLATION,
+    required: true,
+  })
+  purpose: RefundPurpose;
+
+  @Prop({ type: String, trim: true, index: true })
+  changeId?: string;
 }
 
+
 export const RefundSchema = SchemaFactory.createForClass(Refund);
-RefundSchema.index({ bookingType: 1, bookingId: 1 }, { unique: true });
+
+RefundSchema.index(
+  { bookingType: 1, bookingId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      purpose: RefundPurpose.CANCELLATION,
+    },
+  },
+);
+
+RefundSchema.index(
+  { bookingType: 1, bookingId: 1, changeId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      purpose: RefundPurpose.FLIGHT_CHANGE,
+      changeId: { $type: 'string' },
+    },
+  },
+);
