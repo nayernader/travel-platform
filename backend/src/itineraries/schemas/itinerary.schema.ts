@@ -103,6 +103,23 @@ export class Day {
 }
 export const DaySchema = SchemaFactory.createForClass(Day);
 
+export enum AttachedBookingType {
+  FLIGHT = 'flight',
+  HOTEL = 'hotel',
+}
+
+// ITN-27: a confirmed booking attached to the itinerary
+@Schema({ _id: false })
+export class AttachedBooking {
+  @Prop({ required: true, enum: Object.values(AttachedBookingType) })
+  type: AttachedBookingType;
+
+  @Prop({ type: MongooseSchema.Types.ObjectId, required: true })
+  booking: Types.ObjectId;
+}
+export const AttachedBookingSchema = SchemaFactory.createForClass(AttachedBooking);
+
+
 @Schema({ timestamps: true })
 export class Itinerary {
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true, index: true })
@@ -122,6 +139,9 @@ export class Itinerary {
 
   @Prop({ type: [DaySchema], default: [] })
   days: Day[];
+
+  @Prop({ type: [AttachedBookingSchema], default: [] })
+  attachedBookings: AttachedBooking[];
 
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User' }) // set on clones (ITN-21)
   originalAuthor?: Types.ObjectId;
