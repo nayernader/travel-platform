@@ -3,7 +3,7 @@ import { OnEvent } from '@nestjs/event-emitter';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import Stripe from 'stripe';
-import { Refund, RefundDocument, RefundStatus } from './schemas/refund.schema';
+import { Refund, RefundDocument, RefundStatus, RefundPurpose } from './schemas/refund.schema';
 import { Payment, PaymentDocument, PaymentStatus } from './schemas/payment.schema';
 import { STRIPE } from './stripe.provider';
 import type { UserDocument } from '../users/schemas/user.schema';
@@ -52,7 +52,9 @@ export class RefundsService {
   /** Creates the refund record and calls Stripe. A second call for the same booking does nothing. */
   async refundNow(payment: PaymentDocument, amount: number) {
     if (amount <= 0) return null;
+
     let record: RefundDocument;
+
     try {
       record = await this.refunds.create({
         user: payment.user,
@@ -60,31 +62,45 @@ export class RefundsService {
         bookingId: payment.bookingId,
         amount,
         currency: payment.currency,
+        purpose: RefundPurpose.CANCELLATION,
       });
     } catch (e: any) {
       if (e?.code === 11000) {
-        return this.refunds.findOne({ bookingType: payment.bookingType, bookingId: payment.bookingId });
+        return this.refunds.findOne({
+          bookingType: payment.bookingType,
+          bookingId: payment.bookingId,
+          purpose: RefundPurpose.CANCELLATION,
+        });
       }
       throw e;
     }
+
     try {
       const r = await this.stripe.refunds.create({
         payment_intent: payment.stripePaymentIntentId,
         amount: Math.round(amount * 100),
       });
+
       record.stripeRefundId = r.id;
       record.status = toStatus(r.status);
     } catch (err) {
       record.status = RefundStatus.FAILED;
       record.failureReason = (err as Error).message;
     }
+
     await record.save();
+
     await this.notifications.notify(
       payment.user as any,
       NotificationType.REFUND_UPDATED,
       `Refund ${record.status.toLowerCase()}`,
-      { bookingId: String(payment.bookingId), amount, status: record.status },
+      {
+        bookingId: String(payment.bookingId),
+        amount,
+        status: record.status,
+      },
     );
+
     return record;
   }
 
@@ -111,5 +127,95 @@ export class RefundsService {
 
   forBooking(type: string, bookingId: string) {
     return this.refunds.findOne({ bookingType: type, bookingId: new Types.ObjectId(bookingId) });
+  }
+
+  async refundFlightChange(
+    payment: PaymentDocument,
+    amount: number,
+    changeId: string,
+  ) {
+    if (amount <= 0) return null;
+
+    if (!changeId?.trim()) {
+      throw new Error('A valid flight change ID is required for this refund');
+    }
+
+    if (amount > payment.amount) {
+      throw new Error('Refund amount cannot exceed the payment amount');
+    }
+
+    let record = await this.refunds.findOne({
+      bookingType: payment.bookingType,
+      bookingId: payment.bookingId,
+      purpose: RefundPurpose.FLIGHT_CHANGE,
+      changeId,
+    });
+
+    if (record?.status === RefundStatus.REFUNDED || record?.stripeRefundId) {
+      return record;
+    }
+
+    if (!record) {
+      try {
+        record = await this.refunds.create({
+          user: payment.user,
+          bookingType: payment.bookingType,
+          bookingId: payment.bookingId,
+          amount,
+          currency: payment.currency,
+          purpose: RefundPurpose.FLIGHT_CHANGE,
+          changeId,
+        });
+      } catch (e: any) {
+        if (e?.code !== 11000) throw e;
+
+        record = await this.refunds.findOne({
+          bookingType: payment.bookingType,
+          bookingId: payment.bookingId,
+          purpose: RefundPurpose.FLIGHT_CHANGE,
+          changeId,
+        });
+
+        if (!record) throw e;
+        if (record.status === RefundStatus.REFUNDED || record.stripeRefundId) {
+          return record;
+        }
+      }
+    }
+
+    try {
+      const r = await this.stripe.refunds.create(
+        {
+          payment_intent: payment.stripePaymentIntentId,
+          amount: Math.round(amount * 100),
+        },
+        {
+          idempotencyKey: `flight-change-refund-${payment.bookingId}-${changeId}`,
+        },
+      );
+
+      record.stripeRefundId = r.id;
+      record.status = toStatus(r.status);
+      record.failureReason = undefined;
+    } catch (err) {
+      record.status = RefundStatus.FAILED;
+      record.failureReason = (err as Error).message;
+    }
+
+    await record.save();
+
+    await this.notifications.notify(
+      payment.user as any,
+      NotificationType.REFUND_UPDATED,
+      `Refund ${record.status.toLowerCase()}`,
+      {
+        bookingId: String(payment.bookingId),
+        changeId,
+        amount,
+        status: record.status,
+      },
+    );
+
+    return record;
   }
 }

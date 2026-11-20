@@ -10,6 +10,11 @@ export enum PaymentStatus {
   CANCELED = 'CANCELED',
 }
 
+export enum PaymentPurpose {
+  INITIAL_BOOKING = 'INITIAL_BOOKING',
+  FLIGHT_CHANGE = 'FLIGHT_CHANGE',
+}
+
 @Schema({ timestamps: true })
 export class Payment {
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true, index: true })
@@ -35,6 +40,28 @@ export class Payment {
 
   @Prop()
   failureMessage?: string;
+
+  @Prop({
+    type: String,
+    enum: PaymentPurpose,
+    default: PaymentPurpose.INITIAL_BOOKING,
+    required: true,
+  })
+  purpose: PaymentPurpose;
+
+  @Prop({ type: String, trim: true, index: true })
+  changeId?: string;
 }
 
 export const PaymentSchema = SchemaFactory.createForClass(Payment);
+
+PaymentSchema.index(
+  { bookingId: 1, changeId: 1, purpose: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      purpose: PaymentPurpose.FLIGHT_CHANGE,
+      changeId: { $type: 'string' },
+    },
+  },
+);
