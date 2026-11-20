@@ -1,0 +1,1061 @@
+================================================
+Date: 2026-10-29
+Student: Student Name
+Tool: Claude
+Related Requirement: (e.g. ACC-01)
+Prompt:
+(paste your prompt here)
+
+How the output was used:
+(explain how you used the answer)
+================================================
+==================================================
+Date: 2026-11-05
+Member: Nayer Nader (Team leader)
+Branch: feature/ACC-08-09-change-password-profile
+Requirements: ACC-08, ACC-09, ACC-07a, ACC-13
+Tool: Claude (AI assistant)
+
+What I asked:
+- Step-by-step help adding change password (current password check, new password rules),
+  edit profile (name, phone, preferred currency) with validation, and blocking all routes
+  until a temporary password is changed.
+
+What the AI produced:
+- ChangePasswordDto and UpdateProfileDto, AuthService.changePassword,
+  UsersService.updateProfile, a new UsersController (GET/PATCH /api/users/me),
+  an @AllowTemporaryPassword() decorator and a check in JwtAuthGuard,
+  and a change to AllExceptionsFilter so error responses keep a "code" field.
+
+What I did myself:
+- Adapted the code to our existing files, fixed a file created in the wrong folder,
+  tested every case in Swagger (wrong current password, weak password, same password,
+  invalid phone/currency, role injection rejected, 403 PASSWORD_CHANGE_REQUIRED),
+  and reviewed each commit before pushing.
+
+No secrets (connection string, JWT secrets, passwords, API keys) were shared with the AI.
+
+
+================================================
+Date: 2026-11-06
+Student: Ahmad Tarek
+Tool: Claude
+Related Requirement: General (project understanding), FLT-01 to FLT-04, FLT-08, FLT-09, FLT-30, GEN-06
+Prompt: I have attached the project description, the requirements sheet, the team plan and my Member 2 guide. First, give me a brief explanation of the overall plan. Then walk me through my Member 2 steps one at a time, in detail, explaining everything from the smallest detail to the biggest.
+How the output was used: Used the overview to understand the 8-member chain, my place in it (Airlines and Flights, Nov 3 to 6), the MVC/NestJS structure, and the Git workflow (feature branch, pull request to develop, leader review). Used the step-by-step breakdown of Section 0 (setup) and Branch 1 (FLT-01-02) as a reading aid alongside my guide.
+================================================
+
+================================================
+Date: 2026-11-06
+Student: Ahmad Tarek
+Tool: Claude
+Related Requirement: Setup (Section 0)
+Prompt: I don't understand where to type the Git commands from my guide. I'm using VS Code and the repo is already on my machine. Explain where each command should be typed and why.
+How the output was used: Learned to open the integrated terminal in VS Code (Terminal > New Terminal), check the current branch with git status, switch to develop, pull, and create my feature branch. Also learned to create folders and files from the VS Code Explorer.
+================================================
+
+================================================
+Date: 2026-11-06
+Student: Ahmad Tarek
+Tool: Claude
+Related Requirement: Setup (Section 0)
+Prompt: git status gives "fatal: not a git repository" in my project folder, which came from a downloaded ZIP of the repo. I then ran git clone, which worked, but git status failed again in the parent folder. Here is the output. What is going wrong and what should I do?
+How the output was used: Understood that a downloaded ZIP has no .git history and that Git commands must run inside the cloned folder. Cloned the repo into C:\Users\Acer\projects, moved into the travel-platform folder, opened it in VS Code and continued from there.
+================================================
+
+================================================
+Date: 2026-11-06
+Student: Ahmad Tarek
+Tool: Claude
+Related Requirement: Setup (Section 0), shared names check
+Prompt: Here is my git log output, the contents of backend/src, and the results of my Select-String checks for providerId, AIRLINE_MODERATOR and the shared helpers (Auth, CurrentUser, Role, ReferenceDataService, AuditService, NotificationsService, getSkip, buildPage). Is Member 1's shared prep merged into develop, and do the names my code will import actually exist?
+How the output was used: Confirmed that Member 1's shared prep was merged into develop and that the names my code imports exist. Fixed a PowerShell command (Select-String has no -Recurse, so use Get-ChildItem -Recurse | Select-String). Used git config core.pager cat to stop git log from opening the pager. Checked the leftover remote branch name before creating mine.
+================================================
+
+
+
+
+
+
+==================================================
+Date: 2026-11-08
+Member:  Philopateer George Refaat
+Branch: feature/FLT-11-15-17-flight-search
+Requirements: FLT-11 (search by route, local date, passengers, pagination)
+Tool: Claude 
+
+What I asked:
+- Help understanding Member 2's flight and airline code, and what FLT-11 requires.
+- Step-by-step help writing GET /api/flights/search, one small step at a time,
+  so that I could understand the code.
+- Help with a TypeScript error on the query filter (two different ObjectId types).
+- Help finding why PUT /api/airlines/:id/cancellation-policy returned 200 but the
+  policy was not in the response (airline.schema.ts does not declare the field;
+  I will report it to Member 2).
+
+What the AI produced:
+- An explanation of the existing code and a plan in steps.
+- The SearchFlightsDto (query parameters and validation).
+- The controller route and the service method for search, written step by step:
+  the input checks (same airport, price range, unknown airport), the query for
+  active airlines, Scheduled flights, local date and free seats ($elemMatch),
+  the pagination code, the "No flights found" message, and the fix for the
+  filter typing error (building the filter as a plain object).
+- Corrections to my drafts (my first controller method was missing the method
+  declaration, and my first airport check did not look the airport up).
+
+What I did myself:
+- Created the branch and the test data (a moderator linked to a test airline,
+  three flights and their cabins).
+- Wrote first drafts of the controller route and the airport check, which the AI
+  corrected; typed in the AI's code in our files, adapted it (imports, module,
+  constructor) and fixed the compile errors that came up.
+- Tested the search in Swagger with my test data and reviewed each step
+  before committing.
+
+==================================================
+Date: 2026-11-08
+Member:  Philopateer George Refaat
+Branch: feature/FLT-11-15-17-flight-search
+Requirements: FLT-15 (price filter and sorting), FLT-12 part (c) (cabin class filter)
+Tool: Claude 
+
+What I asked:
+- Step-by-step help adding the price range filter, sorting by price, duration or
+  departure time, and a cabin class filter to the flight search.
+
+What the AI produced:
+- The price range rule (inclusive), written once as a MongoDB filter and once as a
+  JavaScript function that keeps only the matching cabins in each result.
+- The sorting code: fromPrice (cheapest matching cabin) and durationMinutes, with
+  sorting and pagination done in JavaScript.
+- The sortOrder (ascending/descending) addition, after I pointed out it was missing.
+- The cabin class filter lines, after I found in Swagger that the filter was ignored.
+- Help finding a duplicate import that stopped the server from reloading.
+
+What I did myself:
+- Typed in and adapted the AI's code in our files, removed the duplicate import,
+  renamed the sort order values to ascending/descending, and tested each step in
+  Swagger with my own test flights (price range, cabin class, sorting, and the
+  min > max error).
+- Noticed that the sorting had no ascending/descending option and that the cabin
+  class filter did nothing, and asked for both to be fixed.
+
+==================================================
+Date: 2026-11-08
+Member: Philopateer George Refaat
+Branch: feature/FLT-11-15-17-flight-search
+Requirements: FLT-17 (flight details)
+Tool: Claude 
+What I asked:
+- Help extending GET /api/flights/:id so that it shows the airline, the duration and
+  the airline's cancellation policy, as FLT-17 requires.
+- Help understanding why the cancellation policy is not saved (the airline schema
+  does not declare cancellationPolicy and baggagePolicy). Member 2 (Ahmed) will
+  fix the schema.
+
+What the AI produced:
+- The changes to findOneView(): loading the airline, calculating the duration
+  in minutes from the UTC times, and returning airlineName, airlineCode and
+  cancellationPolicy.
+- The diagnosis of the schema problem and the exact fields that are missing.
+
+What I did myself:
+- Typed in and adapted the AI's code, tested GET /api/flights/:id in Swagger with
+  my test flights, and checked the result against the requirement text.
+- Reported the schema problem to Member 2, who will add the fields.
+
+==================================================
+Date: 2026-11-08
+Member:  Philopateer George Refaat
+Branch: feature/FLT-19-21-passengers-summary
+Requirements: FLT-19 (passenger details and extra baggage), FLT-21 (booking summary before payment), FLT-12 part (b) (passenger types)
+Tool: Claude
+
+What I asked:
+- Help choosing the endpoints for this branch from the university PDF (POST /api/flight-bookings for the summary, the seat hold in a later branch).
+- Help designing the booking schema, the request DTO and the controller, and how to validate passengers by date of birth and type.
+- Step-by-step help writing the summary: flight checks, seat check, price (infants pay 10 percent), extra baggage rules and fee.
+- Help understanding the git merge with develop and why the baggage policy was missing from the airline response.
+
+What the AI produced:
+- Corrections to my schema and DTO drafts (reference fields as ObjectId, the passenger and segment DTOs, the uppercase transform for the passenger type).
+- The service code for age and type checks, loading and checking the flights (status, departed, deactivated airline, cabin, return after arrival), seat check (409), price calculation, baggage rules (maximum bags, weight, infants) and the baggage fee.
+- The case-insensitive cabinClass transform in the booking DTO.
+- The Swagger test cases with request bodies and expected responses, and the git commands for the commit and the merge with develop.
+
+What I did myself:
+- Chose the endpoint split from the PDF, wrote first drafts of the schema and DTO, wired the controller and the module, and typed in and adapted the AI's service code.
+- Set the airline baggage policy as a moderator and tested every case in Swagger with my own test flights (prices, passenger types, flight errors, baggage rules, access errors).
+- Resolved the merge with develop and checked that only the booking files were committed.
+
+==================================================
+Date: 2026-11-08
+Member:  Philopateer George Refaat
+Branch: feature/FLT-22-seat-hold
+Requirements: FLT-22 (atomic seat hold, 10-minute expiry), GEN-11 (booking status lifecycle)
+Tool: Claude
+
+What I asked:
+- Step-by-step help building the seat hold: how to reserve seats atomically when the seats are inside the cabins array, how to undo the first flight of a round trip if the second is full, and how to create the Pending Payment booking.
+- How to expire unpaid holds every minute without returning seats twice if a payment arrives at the same moment.
+- How to enforce the allowed status changes (GEN-11) and how to test the race for the last seat.
+
+What the AI produced:
+- The atomic seat methods (one updateOne with $elemMatch and cabins.$, plus giving seats back), the hold() method and the POST /api/flight-bookings/hold endpoint.
+- The expiry job with @Cron (every minute) and the atomic status change.
+- The GEN-11 transitions table with changeStatus() and its unit test.
+- The race test script (test/race-hold.mjs) and the Swagger and Compass test steps.
+- Fixes for a TypeScript error (cabinClass typed as string instead of CabinClass) and the Mongoose "new" option warning.
+
+What I did myself:
+- Typed in and adapted the AI's code in our files, and fixed the compile and warning issues it pointed out.
+- Tested the hold in Swagger and Compass: booking created as PENDING_PAYMENT with a 10-minute hold, seats taken, second hold on the last seat refused (409), expired holds set to EXPIRED with seats returned.
+- Ran the unit test and the race test (5 requests for 1 seat: exactly one 201, four 409, no overbooking).
+
+==================================================
+Date: 2026-11-08
+Member:  Philopateer George Refaat
+Branch: feature/FLT-23-confirm-booking
+Requirements: FLT-23 (confirm after payment, booking reference, notification, e-ticket)
+Tool: Claude
+
+What I asked:
+- Help building the confirmation step for Member 6's payment webhook (getPayable, markPaid), the unique booking reference, the in-app notification, the booking details endpoint and the e-ticket PDF.
+
+What the AI produced:
+- getPayable (owner only, still pending, hold not expired) and markPaid (atomic change to CONFIRMED through the GEN-11 helper, unique reference with retry, payment id stored, hold cleared, safe if the webhook is sent twice).
+- The confirmation notification, GET /api/flight-bookings/:id and the e-ticket PDF with pdfkit.
+- The fix for the TypeScript "possibly null" errors in the ownership check.
+- A temporary test route to confirm a booking without Stripe, which I removed before committing.
+
+What I did myself:
+- Typed in and adapted the code, tested hold, confirm, the second payment attempt, booking details, the e-ticket download, the notification and the error cases in Swagger, and removed the temporary route.
+
+No secrets (connection string, JWT secrets, passwords, API keys) were shared with the AI.
+
+================================================
+Date: 2026-11-08
+Student: Ahmed Hossam
+Tool: Claude
+Related Requirement: FLT-25, FLT-26
+Prompt:
+Using my existing flight-bookings service, write the "my bookings" list
+(upcoming, past, cancelled, 10 per page) and the cancel booking feature
+with a refund preview based on the airline cancellation tiers.
+
+How the output was used:
+Used the suggested list query, refund preview, cancel method and refund
+event as a base. I reviewed it, tested it in Swagger, and adjusted it to
+match the project code.
+================================================
+
+================================================
+Date: 2026-11-08
+Student: Ahmed Hossam
+Tool: Claude
+Related Requirement: FLT-06
+Prompt:
+Write the moderator "cancel flight" feature using my existing flights and
+flight-bookings services: cancel confirmed bookings with a 100% refund,
+release pending holds and notify the passengers.
+
+How the output was used:
+Used the event-based design to avoid a circular module import and the
+booking handler as a base. I reviewed it and tested it in Swagger.
+================================================
+
+================================================
+Date: 2026-11-08
+Student: Ahmed Hossam
+Tool: Claude
+Related Requirement: FLT-12 (a)
+Prompt:
+Add round-trip search to my existing flight search: an optional returnDate
+that runs the search twice and returns outbound and return results.
+
+How the output was used:
+Used the idea of reusing the one-way search for both directions. I
+reviewed it and tested it in Swagger.
+================================================
+
+================================================
+Date: 2026-11-09
+Student: Ahmed Hossam
+Tool: Claude
+Related Requirement: FLT-05
+Prompt:
+Write the moderator "edit flight" feature: edit times, airports, cabin price
+and seat counts of my own Scheduled flights, with the booked + held seats
+rule and notifications for time changes.
+
+How the output was used:
+Used the atomic seat update and the schedule notification as a base. I
+reviewed it and tested it in Swagger.
+================================================
+
+================================================
+Date: 2026-11-11
+Student: Ahmed Hossam
+Tool: Claude
+Related Requirement: FLT-22, FLT-26
+Prompt:
+My flight-bookings service logs an error every minute and holds are not
+expiring. Find the cause and fix it. Also check that the refund tiers are
+read correctly from the airline cancellation policy.
+
+How the output was used:
+Found that the every-minute cron decorator was placed on findMine instead
+of expireHolds, and moved it. The airline schema stores the policy as an
+array, so the refund lookup was changed to read an array (or { tiers }).
+I reviewed the changes, tested hold expiry and refund preview in Swagger,
+and also removed the duplicate cancel route decorators in the flights
+controller.
+Date: 2026-11-10
+Student: Gaby Ramy
+Tool: Claude
+Related Requirement: HTL-01, HTL-02, HTL-03 (schema)
+Prompt:
+Using my Member 4 guide and the existing repo, write the Hotel and Room
+schemas, the hotel DTOs, the hotels service, controller and module: the
+admin creates a hotel, the admin or hotel moderator edits it, and anyone
+can view the hotel details.
+
+How the output was used:
+Used the generated files as a base and copied them into backend/src/hotels.
+I fixed the UserDocument import (import type) so the build passes, reviewed
+the code, and tested it in Swagger: create (201), missing name and starClass 9
+(400), normal user (403), logged out (401), get by id (200), unknown id (404).
+
+Date: 2026-11-10
+Student: Gaby Ramy
+Tool: Claude
+Related Requirement: GEN-13 (setup)
+Prompt:
+Asked how to set up the project from the guide, and for help with a
+database connection error when starting the backend (the app read a
+different MONGODB_URI than my .env).
+
+How the output was used:
+Used the explanation to check my .env location and clear a MONGODB_URI
+environment variable from another project. The server then started and
+connected to the shared database.
+
+Date: 2026-11-11
+Student: Gaby Ramy
+Branch: feature/HTL-03-05-06-room-crud
+Related Requirement: HTL-03, HTL-05, HTL-06
+Tool: Claude
+Prompt:
+Asked Claude to write the room DTOs, service, controller and reservation
+conflict helper for the hotel moderator: add, edit, deactivate and delete rooms,
+and to fix a 500 error when editing a room.
+
+How the output was used:
+Copied the generated files into backend/src/hotels. Fixed the room update so
+fields that were not sent are not overwritten with undefined. Tested all the
+endpoints in Swagger (201, 409, 400, 200, 403).
+
+Date: 2026-11-12
+Student: Gaby Ramy
+Branch: feature/HTL-09-10-policies
+Related Requirement: HTL-09, HTL-10, HTL-01 (photos), GEN-08
+Tool: Claude
+Prompt:
+Asked Claude to write the hotel policies feature (check-in/out times and
+cancellation tiers with validation) and the hotel photo upload endpoint
+(up to 5 JPG/PNG photos using the shared upload service).
+
+How the output was used:
+Copied the generated DTO, service method and controller routes into
+backend/src/hotels and reviewed them. Tested in Swagger: policies set (200),
+bad time (400), duplicate days-before (400), refund percent over 100 (400),
+other hotel (403), and photo upload (valid image, invalid file, more than 5
+photos, other hotel).
+Date: 2026-11-11
+Student: Gaby Ramy
+Branch: feature/HTL-04-availability-ranges
+Related Requirement: HTL-04, HTL-05 (availability part), HTL-06 (blocking)
+Tool: Claude
+Prompt:
+Asked Claude to write the room availability feature from my Member 4 guide for the
+hotel moderator: add non-overlapping bookable date ranges, block date ranges, and
+replace the availability list safely. Also asked what to test in Swagger and for help
+with a database connection error (a MONGODB_URI environment variable from another
+project overrode my .env).
+
+How the output was used:
+Copied the generated files into backend/src/hotels (availability.dto.ts,
+availability.service.ts) and added the two routes to rooms.controller.ts and the
+service to hotels.module.ts. Used import type for UserDocument to match the repo.
+The build passes. Cleared the MONGODB_URI variable so the server connected to the
+shared database. Tested in Swagger: add range (201), overlapping range (400),
+start after end (400), bad date and bad kind (400), block range (201), overlapping
+block (400), replace list (200), no token (401), normal user (403), unknown room (404).
+The 409 checks for reservations wait for Member 5's HotelBooking model.
+
+
+==================================================
+Date: 2026-11-13
+Student: yasseenahmedya
+Branch: feature/HTL-16-18-book-and-hold
+Related Requirement: HTL-16, HTL-18, GEN-11
+Tool: Gemini
+Prompt:
+Implement the book-and-hold feature for hotel reservations: multi-room booking
+in one reservation, assign adults and children per room, validate max occupancy,
+10-minute hold using room-night claims with atomic insert, all-or-nothing rollback
+on conflict (409), and cron job to expire stale holds every minute.
+
+How the output was used:
+Created CreateHotelBookingDto, RoomGuestsDto, HotelBookingsController, and
+HotelBookingsService. Registered controller and service in HotelBookingsModule.
+Verified clean build and Swagger API documentation.
+==================================================
+
+
+==================================================
+Date: 2026-11-13
+Student: yasseenahmedya
+Branch: feature/HTL-17-confirm-reservation
+Related Requirement: HTL-17, ACC-11
+Tool: Gemini
+Prompt:
+Implement the confirm-reservation feature for hotel bookings:
+1. makeReference helper generating unique 'HB-XXXXXX' references.
+2. getPayable(bookingId, userId) for Member 6's payment check with hold expiration and status checks.
+3. confirmPaid(bookingId, paymentId) called by payment webhook after Stripe confirms, with up to 5 retry attempts on duplicate reference, clearing holdExpiresAt, and emitting in-app notification BOOKING_CONFIRMED.
+4. findOneFor(user, id) with hotel population and ACC-11 ownership verification (owner or admin).
+5. GET /api/hotel-bookings/:id endpoint in HotelBookingsController.
+
+How the output was used:
+Added makeReference, getPayable, confirmPaid, and findOneFor to HotelBookingsService.
+Added @Get(':id') route with Swagger documentation to HotelBookingsController.
+Imported NotificationsModule in HotelBookingsModule. Verified clean build.
+==================================================
+
+
+==================================================
+Date: 2026-11-13
+Student: yasseenahmedya
+Branch: feature/HTL-20-21-22-my-reservations
+Related Requirement: HTL-20, HTL-21, HTL-22, HTL-23, GEN-11
+Tool: Gemini
+Prompt:
+Implement my reservations, refund preview, cancellation, and moderator reservations:
+1. listMine(user, group, page) grouping upcoming, past, cancelled with 10 per page pagination.
+2. refundPreview(user, id) calculating refund percent from hotel cancellation policy tiers and remaining days before check-in.
+3. cancel(user, id) setting status to CANCELLED, releasing room nights, emitting booking.refund.requested event when refundPercent > 0, and sending BOOKING_CANCELLED notification.
+4. listForHotel(user, hotelId, page) verifying moderator manages hotel and returning paginated reservations.
+5. @Cron(CronExpression.EVERY_5_MINUTES) completeFinished() auto-completing confirmed reservations after checkout date.
+6. Add @Get(), @Get(':id/cancel-preview'), and @Post(':id/cancel') to HotelBookingsController.
+7. Create HotelReservationsController with @Get('hotels/:id/reservations').
+
+How the output was used:
+Added methods to HotelBookingsService, routes to HotelBookingsController, created HotelReservationsController, and registered controllers in HotelBookingsModule. Verified clean build.
+==================================================
+
+
+==================================================
+Date: 2026-11-13
+Student: yasseenahmedya
+Branch: feature/HTL-23-24-reviews
+Related Requirement: HTL-23, HTL-24
+Tool: Gemini
+Prompt:
+Implement hotel reviews and ratings feature according to Member 5 guide:
+1. Create CreateReviewDto and UpdateReviewDto with validation (rating 1-5, comment max 1000).
+2. Create ReviewsService:
+   - recalc(hotelId): aggregates non-hidden reviews and updates hotel ratingAverage and ratingCount.
+   - create(user, bookingId, dto): allows only owner of COMPLETED reservation to review, enforces one review per booking via unique index (code 11000 -> 409).
+   - update(user, id, dto): edits review owned by user and recalculates hotel rating.
+   - remove(user, id): deletes review owned by user and recalculates hotel rating.
+   - listForHotel(hotelId, page): returns paginated visible reviews (newest first) along with hotel ratingAverage and ratingCount.
+3. Create ReviewsController with endpoints:
+   - POST /api/hotel-bookings/:id/review
+   - PATCH /api/reviews/:id
+   - DELETE /api/reviews/:id
+   - GET /api/hotels/:id/reviews
+4. Register ReviewsController and ReviewsService in HotelBookingsModule.
+
+How the output was used:
+Created review.dto.ts, reviews.service.ts, reviews.controller.ts, updated review.schema.ts to ensure proper Types.ObjectId typing, and registered them in HotelBookingsModule. Verified clean build.
+==================================================
+==================================================
+Date: 2026-11-14
+Student: Tony Hany (Member 6)
+Tool: Claude
+Related Requirement: Setup / ITN-18
+Prompt:
+I am member 6, go with me step by step from setup to test on Swagger to finish my part, explain every step very simply.
+
+How the output was used:
+I followed the setup steps (Git config, clone, develop branch, npm install, .env, running the backend) and fixed my startup error (MONGODB_URI undefined) by restarting after saving .env. I also learned my port was 3001 and kept real keys out of commits.
+
+
+Date: 2026-11-14
+Student: Tony Hany (Member 6)
+Tool: Claude
+Related Requirement: ITN-18, ACC-09 (exchange rates)
+Prompt:
+I cloned the repo and put the .env inside backend. Send the code again and tell me exactly which code to paste in which file. (Exchange-rate service: schema, service, controller, module, and the FXRatesAPI URL.)
+
+How the output was used:
+I created the exchange-rates module (schema, service with daily cron and cached fallback, controller GET /api/exchange-rates, module) and registered it in app.module.ts. I fixed the missing EXCHANGE_RATE_API_URL in .env after reading the warning in the log, tested the endpoint in Swagger, then committed, pushed and opened the PR.
+
+
+Date: 2026-11-14
+Student: Tony Hany (Member 6)
+Tool: Claude
+Related Requirement: PAY-04 (single platform currency)
+Prompt:
+In my project the currencies file is currencies.ts, not currency.ts. What should I do with PLATFORM_CURRENCY?
+
+How the output was used:
+I kept the leader's currencies.ts unchanged and created a separate platform-currency.ts exporting PLATFORM_CURRENCY (default USD), which the exchange-rate service imports.
+
+
+Date: 2026-11-15
+Student: Tony Hany (Member 6)
+Tool: Claude
+Related Requirement: PAY-02 (provider policies and acceptance)
+Prompt:
+I need to work on the second one, tell me exactly what you need to start, I am late. (Then I pasted the output of the commands listing the payments folder, booking service methods and schemas.)
+
+How the output was used:
+I created policies.service.ts, policies.controller.ts, the PolicyAcceptance schema and updated payments.module.ts. I fixed TypeScript errors (ObjectId types, "import type" for UserDocument, Auth/CurrentUser imports). I tested GET policies and POST accept-policies in Swagger as a traveler, then pushed and opened the PR.
+
+
+Date: 2026-11-17
+Student: Tony Hany (Member 6)
+Tool: Claude
+Related Requirement: PAY-01 (Stripe payment and webhook)
+Prompt:
+Lets continue with the third one and remember I didn't merge yet, so continue with my branch. (Then: step-by-step Stripe key, Stripe CLI, webhook secret, and filling payments.service.ts, payments.controller.ts, payments.module.ts.)
+
+How the output was used:
+I installed the stripe package, put STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET only in .env, ran stripe listen to forward webhooks, and created the Payment schema, Stripe provider, BookingPort, PaymentsService and PaymentsController (create payment, retry, signed webhook). I fixed the flight/hotel method names (markPaid vs confirmPaid), the exports and the "import type" errors. The 6 payment and policy endpoints appeared in Swagger.
+
+
+Date: 2026-11-17
+Student: Tony Hany (Member 6)
+Tool: Claude
+Related Requirement: PAY-03 (refunds)
+Prompt:
+Now send me the codes to paste in each one. (Refund schema, RefundsService listening to booking.refund.requested, RefundsController, module and handleEvent edits.)
+
+How the output was used:
+I created the Refund schema, RefundsService (Stripe refund, status, notification REFUND_UPDATED, automatic refund for late payments), RefundsController and registered them in payments.module.ts. I fixed a misplaced closing brace and missing imports, confirmed the Refunds section in Swagger, then pushed and opened the PR.
+
+
+Date: 2026-11-17
+Student: Tony Hany (Member 6)
+Tool: Claude
+Related Requirement: Team workflow (merging PAY-01 to PAY-04, ITN-18)
+Prompt:
+The admin wants to know the correct and best sequence to merge my work. Send it with a neat way to send it to the leader.
+
+How the output was used:
+I sent the leader the merge order (exchange-rates, PAY-02, PAY-01, PAY-03) with "Create a merge commit", plus the .env variables everyone needs after the merge.
+
+
+
+Date: 2026-11-17
+Member:  Philopateer George Refaat
+Branch: feature/ITN-01-03-itinerary-crud
+Requirements: ITN-01, ITN-03
+Tool: Claude 
+
+What I asked:
+- Help building the itinerary schema (embedded days, activities, budget entries, transport costs),
+  create/edit/delete/list my itineraries with ownership checks, adapted to the repo's shared helpers.
+
+What the AI produced:
+- itinerary.schema.ts, itinerary.view.ts (derived day dates and city groups), DTOs, service, controller, module.
+
+What I did myself:
+- Pasted and reviewed the code, tested in Swagger, built, committed.
+==================================================
+
+==================================================
+Date: 2026-11-17
+Member:  Philopateer George Refaat
+Branch: feature/ITN-05-07-08-09-days
+Requirements: ITN-05, ITN-07, ITN-08, ITN-09
+Tool: Claude (git checkout -b feature/ITN-10-12-activities
+
+What I asked:
+- Help adding days to an itinerary: add (max 60, city from the reference data), edit city and notes,
+  delete with renumbering, move a day to a new position, and city grouping of consecutive days.
+
+What the AI produced:
+- day DTOs, ItineraryDaysService (add, update, remove, reorder with renumbering), ItineraryDaysController
+  (route order so "reorder" is not read as a day id), and the updated module.
+
+What I did myself:
+- Pasted and reviewed the code, tested in Swagger, built, committed.
+==================================================
+
+==================================================
+Date: 2026-11-17
+Member:  Philopateer George Refaat
+Branch: feature/ITN-10-12-activities
+Requirements: ITN-10, ITN-12
+Tool: Claude 
+
+What I asked:
+- Help adding activities to an itinerary day (name, description, optional time and cost) and
+  attaching/removing images using the shared upload service.
+
+What the AI produced:
+- activity DTOs, ItineraryActivitiesService (add, edit, delete, add/remove images with ownership
+  through the itinerary), two controllers (nested add, flat edit/delete/images routes as in the project PDF).
+
+What I did myself:
+- Pasted and reviewed the code, tested in Swagger, built, committed.
+==================================================
+
+==================================================
+Date: 2026-11-17
+Member: Philopateer George Refaat
+Branch: feature/ITN-14-16-budgets-transport
+Requirements: ITN-14, ITN-16
+Tool: Claude 
+
+What I asked:
+- Help adding budget entries per day (food, accommodation, in-city transport, activities) and
+  intercity transport costs to an itinerary, following the endpoint list in the project PDF.
+
+What the AI produced:
+- budget and transport DTOs, ItineraryBudgetsService (add, edit, delete, move a transport cost
+  to another day), three controllers (nested add, flat edit/delete routes).
+
+What I did myself:
+- Pasted and reviewed the code, tested in Swagger, built, committed.
+==================================================
+
+==================================================
+Date: 2026-11-18
+Member: Philopateer George Refaat
+Branch: feature/ITN-20-21-visibility-search
+Requirements: ITN-20, ITN-21 (and the ACC-12 rule for public itineraries)
+Tool: Claude 
+
+What I asked:
+- Help adding public/private visibility, public search with filters, a read-only public view
+  and cloning, making sure private, hidden and deactivated-owner itineraries are never exposed.
+
+What the AI produced:
+- visibility in the update DTO, search DTO, ItinerarySharingService (aggregation search, public
+  view, deep-copy clone), a public controller registered before the main one, and a clone route.
+
+What I did myself:
+- Pasted and reviewed the code, tested in Swagger with several accounts, built, committed.
+==================================================
+
+==================================================
+Date: 2026-11-18
+Member: Ahmed Hossam
+Branch: feature/ITN-18-budget-currency
+Requirements: ITN-18 (and the totals of ITN-14, subtotals of ITN-09)
+Tool: Claude
+What I asked:
+- Help building the itinerary budget summary: totals by category, by day and by city group,
+ converted to the user's preferred currency with the shared exchange-rate service.
+What the AI produced:
+- ItineraryBudgetSummaryService, its controller and the updated module.
+What I did myself:
+- Pasted and reviewed the code, tested in Swagger, built, committed.
+==================================================
+
+==================================================
+Date: 2026-11-18
+Member: Ahmed Hossam
+Branch: feature/ITN-25-26-hotel-flight-suggestions
+Requirements: ITN-25, ITN-26
+Tool: Claude
+What I asked:
+- Help adding hotel suggestions for a city group of an itinerary and flight suggestions to the
+ city of the first day, reusing the existing hotel and flight search services.
+What the AI produced:
+- query DTOs, ItinerarySuggestionsService (dates from the city group, one flight search per
+ airport of the destination city), its controller and the updated module.
+What I did myself:
+- Pasted and reviewed the code, tested in Swagger, built, committed.
+==================================================
+
+Date: 2026-11-19
+Student: Philopateer George Refaat
+Tool: Claude
+Related Requirement: ITN-28 (optional bonus)
+Prompt:
+I want to add the optional itinerary PDF export (GET /api/itineraries/:id/pdf).
+Keep any business rules from the project PDF as they are. For anything the PDF
+does not specify, let me choose. (I chose: the owner can always export, other
+logged-in users can export only public non-hidden itineraries, and the PDF
+contains the trip plan plus the budget summary.)
+
+How the output was used:
+Used the suggested design and code for the export: a new ItineraryPdfService
+and ItineraryPdfController built with pdfkit, a summaryFor() method in the
+budget summary service so the budget can be reused for an itinerary that is
+already access-checked, and making findPublic() in the sharing service
+callable so non-owners only get public, non-hidden itineraries of active
+owners. I reviewed the code, pasted it into the project myself and checked
+the result in Swagger.
+
+Date: 2026-11-19
+Student: Ahmed Hossam
+Tool: Claude
+Related Requirement: ACC-02
+Prompt:
+Implement email verification for registration: a random token whose hash is
+stored, an email with a verification code sent from SMTP settings in .env,
+a public verify-email endpoint, and blocking of booking and payment routes
+for unverified users.
+
+How the output was used:
+Used the token flow, mail service and guard check as a base. I reviewed it,
+set the SMTP values in my own .env, and tested register, verify, reuse,
+expiry and login in Swagger.
+
+Date: 2026-11-19
+Student: Ahmed Hossam
+Tool: Claude
+Related Requirement: ACC-07
+Prompt:
+Implement forgot-password and reset-password: a 6-digit code emailed to the
+user, only its hash stored, 15-minute expiry, limited wrong attempts, a
+generic response that does not reveal whether an email exists, revoked
+refresh tokens after a reset, and rate limiting on the forgot endpoint.
+
+How the output was used:
+Used the code flow, atomic reset update and throttling as a base. I
+reviewed it, set the SMTP values in my own .env, and tested forgot, reset,
+reuse, expiry, lockout and suspended accounts in Swagger.
+Date: 2026-11-19
+Member: fady (Member 8)
+Branch: feature/BLG-01-post-crud
+Requirements: BLG-01, BLG-03, BLG-04, BLG-08
+Tool: Claude
+What I asked:
+- Implement the Post and Comment schemas, create/edit/delete posts with tags (max 5, 30 chars) and draft/publish, and the my-posts list, following the Member 8 guide.
+What the AI produced:
+- Post and Comment schemas, post DTOs with tag cleaning, PostsService, PostsController and BlogModule.
+What I did myself:
+- Reviewed the code against the Member 8 guide and the repo, built, tested in Swagger, committed.
+
+Date: 2026-11-19
+Member: fady (Member 8)
+Branch: feature/ACC-14-16-account-management
+Requirements: ACC-14, ACC-15 (suspend moderators), ACC-16, GEN-07 viewer
+Tool: Claude
+What I asked:
+- Implement the admin account list (search, role and status filters, 10 per page), suspend/reactivate with audit log and notification, and the audit log viewer.
+What the AI produced:
+- ListAccountsDto, AdminAccountsService and AdminAccountsController, registered in AdminModule.
+What I did myself:
+- Reviewed the code against the Member 8 guide and the repo, built, tested in Swagger, committed.
+
+Date: 2026-11-19
+Member: fady (Member 8)
+Branch: feature/BLG-02-09-browse-search
+Requirements: BLG-02, BLG-08 (tag list), BLG-09
+Tool: Claude
+What I asked:
+- Implement public browsing of published posts with a tag filter, the post page with comments, and keyword search (title, tags, author) ordered by likes + comments.
+What the AI produced:
+- BlogPublicService and BlogPublicController; fixed the controller order so GET /posts/mine is not caught by GET /posts/:id.
+What I did myself:
+- Reviewed the code against the Member 8 guide and the repo, built, tested in Swagger, committed.
+
+Date: 2026-11-19
+Member: fady (Member 8)
+Branch: feature/BLG-05-06-07-comments-likes
+Requirements: BLG-05, BLG-06, BLG-07
+Tool: Claude
+What I asked:
+- Implement comments on published posts (1-500 chars) with edit/delete by the author, and like-once/unlike with like counts.
+What the AI produced:
+- CommentDto, InteractionsService (atomic $addToSet likes, commentCount kept in sync) and InteractionsController.
+What I did myself:
+- Reviewed the code against the Member 8 guide and the repo, built, tested in Swagger, committed.
+
+Date: 2026-11-19
+Member: fady (Member 8)
+Branch: feature/BLG-10-12-images-author-page
+Requirements: BLG-10, BLG-12
+Tool: Claude
+What I asked:
+- Implement attaching/removing post images with the shared upload service (GEN-08), and the public author page with published posts and public itineraries.
+What the AI produced:
+- PostImagesController (max 5 images, removal by URL or file name) and AuthorsController (Itinerary read by model name).
+What I did myself:
+- Reviewed the code against the Member 8 guide and the repo, built, tested in Swagger, committed.
+
+Date: 2026-11-19
+Member: fady (Member 8)
+Branch: feature/GEN-09-10-reports-moderation
+Requirements: GEN-09, GEN-10
+Tool: Claude
+What I asked:
+- Implement content reports (post, comment, review, itinerary; once per user and item) and admin moderation: list open reports, dismiss/hide/delete, and direct hide/delete with audit log and notification.
+What the AI produced:
+- Report schema, report DTOs, ModerationService (also keeps commentCount and hotel ratings correct and closes other open reports on the same item) and ReportsController.
+What I did myself:
+- Reviewed the code against the Member 8 guide and the repo, built, tested in Swagger, committed.
+
+Date: 2026-11-19
+Member: fady (Member 8)
+Branch: feature/ACC-13-15-moderator-accounts
+Requirements: ACC-13, ACC-15 (providers)
+Tool: Claude
+What I asked:
+- Implement admin creation of airline/hotel moderators linked to one provider with a temporary password, and deactivate/reactivate of airlines and hotels with audit log and notifications.
+What the AI produced:
+- CreateModeratorDto, AdminProvidersService (uses passwordHash and mustChangePassword from the User schema) and AdminProvidersController.
+What I did myself:
+- Reviewed the code against the Member 8 guide and the repo, built, tested in Swagger, committed.
+
+Date: 2026-11-19
+Member: fady (Member 8)
+Branch: feature/ACC-17-admin-bookings
+Requirements: ACC-17
+Tool: Claude
+What I asked:
+- Implement the admin read-only list of all flight and hotel bookings with type, status and travel-date filters, 10 per page.
+What the AI produced:
+- ListBookingsDto, AdminBookingsService (correct merged pagination; date filter applied in the query on the first flight's departure or the hotel check-in) and AdminBookingsController.
+What I did myself:
+- Reviewed the code against the Member 8 guide and the repo, built, tested in Swagger, committed.
+
+Date: 2026-11-19
+Member: fady (Member 8)
+Branch: fixes on BLG-02-09, BLG-10-12, GEN-09-10, ACC-13-15
+Requirements: GEN-05, BLG-05, BLG-12, GEN-10, ACC-15
+Tool: Claude
+What I asked:
+- Check every Member 8 task against the requirements and the guide's final checklist, then fix the gaps: comments and author page paginated 10 per page, admins can view hidden content, travellers with active bookings notified when a provider is deactivated.
+What the AI produced:
+- The four fix commits (each on the branch it belongs to) and the tests that check them.
+What I did myself:
+- Reviewed the code against the Member 8 guide and the repo, built, tested in Swagger, committed.
+
+
+==================================================
+
+
+Date: 2026-11-19
+Student: Ahmed Hossam
+Tool: Claude
+Related Requirement: ACC-02
+Prompt:
+Implement email verification for registration: a random token whose hash is
+stored, an email with a verification code sent from SMTP settings in .env,
+a public verify-email endpoint, and blocking of booking and payment routes
+for unverified users.
+
+How the output was used:
+Used the token flow, mail service and guard check as a base. I reviewed it,
+set the SMTP values in my own .env, and tested register, verify, reuse,
+expiry and login in Swagger.
+
+Date: 2026-11-19
+Student: Ahmed Hossam
+Tool: Claude
+Related Requirement: ACC-07
+Prompt:
+Implement forgot-password and reset-password: a 6-digit code emailed to the
+user, only its hash stored, 15-minute expiry, limited wrong attempts, a
+generic response that does not reveal whether an email exists, revoked
+refresh tokens after a reset, and rate limiting on the forgot endpoint.
+
+How the output was used:
+Used the code flow, atomic reset update and throttling as a base. I
+reviewed it, set the SMTP values in my own .env, and tested forgot, reset,
+reuse, expiry, lockout and suspended accounts in Swagger.
+
+Date: 2026-11-19
+Student: Ahmed Hossam
+Tool: Claude
+Related Requirement: GEN-01 (email notifications bonus)
+Prompt:
+Send an email alongside the existing in-app notifications for booking,
+refund, flight change and account or provider status events, reusing the
+mail service, without ever breaking the main action.
+
+How the output was used:
+Used the single hook in NotificationsService.notify and the subject map as
+a base. I reviewed it, tested it with a mail test inbox, with SMTP empty
+and with a wrong SMTP password in Swagger.
+Date: 2026-11-20
+Member: Philopateer George Refaat 
+Branch: feature/ITN-27-attach-bookings
+Requirements: ITN-27 (optional bonus)
+Tool: Claude
+What I asked:
+- Implement attaching my own confirmed flight and hotel bookings to an itinerary (POST /api/itineraries/:id/bookings) with no duplicates and a detach endpoint, stored as an embedded list on the itinerary.
+What the AI produced:
+- AttachBookingDto, ItineraryBookingsService (ownership check, CONFIRMED-only rule, atomic attach and detach), ItineraryBookingsController, the attachedBookings field on the Itinerary schema, and removing attachedBookings from the public itinerary view.
+What I did myself:
+- Reviewed the code against the project requirements and the repo, ran a real Stripe test-mode payment to get a confirmed flight booking, tested attach, duplicate (409), invalid body (400), detach and the public view in Swagger, merged the latest develop and resolved the conflict in itineraries.module.ts with the ITN-28 PDF code, built, committed.
+
+==================================================
+Date: 2026-11-20
+Member: Member 1 (Team leader)
+Branch: feature/GEN-13-final-hardening
+Requirements: GEN-13 (backend enforcement of validation, rules and authorisation; salted password hashes)
+Tool: Claude (AI assistant)
+
+What I asked:
+- How to check that all 8 members' merged code enforces login, roles, ownership and
+  validation on the backend, and to update the README for submission.
+
+What the AI produced:
+- backend/scripts/audit-routes.mjs: lists all 141 routes and flags the 32 without @Auth.
+- Search commands for admin locks, Stripe webhook signature, public itinerary/post filters,
+  populate() leaks and secrets in code.
+- The updated README: status, setup, environment variable names, test accounts,
+  security summary and endpoints by module.
+
+What I did myself:
+- Pulled the merged develop, ran the build and the 19 tests, checked that my auth features
+  survived the email PR, reviewed every public route (all intended: login flows, searches,
+  public reads, reference data, Stripe webhook), and confirmed admin routes use
+  @Auth(Role.ADMIN), the webhook uses constructEvent, and public content is filtered.
+
+No secrets (connection string, JWT secrets, passwords, API keys) were shared with the AI.
+================================================ 
+Date: 2026-11-19
+Student: Ahmed Hossam 
+Tool: ChatGPT 
+Related Requirement: Authentication
+/ Email Verification (optional bonus) Nature of AI contribution: Bug
+fixing and troubleshooting Prompt: I cannot see the email sent after
+registering. Help me identify why the verification email is not arriving
+and review the registration and email-sending implementation.
+
+How the output was used: Used the troubleshooting guidance to
+investigate and fix issues in the registration flow, SMTP configuration,
+verification-email service, and verification link. Email delivery still
+needs to be confirmed by testing with a real inbox.
+================================================
+
+================================================ 
+Date: 2026-11-20
+Student: Ahmed Hossam 
+Tool: ChatGPT 
+Related Requirement: Authentication
+/ Email Verification (optional bonus) Nature of AI contribution: Code
+review and corrections Prompt: Review the NestJS email-verification
+implementation, including the verification DTO, controller endpoint,
+token validation, and email verification flow.
+
+How the output was used: Used the review to identify and correct issues
+in the token-based verification endpoint and the flow in which the email
+link opens a page before the user explicitly submits the verification
+request. ================================================
+
+================================================ 
+Date: 2026-11-20
+Student: Ahmed Hossam 
+Tool: ChatGPT 
+Related Requirement: Authentication
+/ Password Recovery (optional bonus) Nature of AI contribution: Code
+review and bug fixing Prompt: Review the password-reset implementation,
+including the reset token, expiry, resend cooldown, and reset page.
+
+How the output was used: Used the guidance to review and correct the
+password-reset flow, including token validation, expiration, replacement
+of older tokens, and single-use token consumption.
+================================================
+
+================================================ 
+Date: 2026-11-20
+Student: Ahmed Hossam 
+Tool: ChatGPT 
+Related Requirement: ACC-05 —
+Account Lockout Nature of AI contribution: Debugging and verification of
+an existing implementation Prompt: Review my AuthService login
+implementation and verify whether it correctly locks an account after
+repeated failed login attempts, rejects login during the lock period,
+and resets the failed-attempt counter after a successful login.
+
+How the output was used: Used the review to check the existing login
+implementation and verify its configuration against auth.constants.ts:
+five failed attempts and a fifteen-minute lock duration.
+================================================
+
+================================================ 
+Date: 2026-11-20
+Student: Ahmed Hossam 
+Tool: ChatGPT 
+Related Requirement: ACC-06 —
+Inactivity Timeout Nature of AI contribution: Code review and
+troubleshooting Prompt: Review the authentication session and
+refresh-token implementation, including the inactivity timeout and
+cookie handling.
+
+How the output was used: Used the guidance to inspect and correct
+session-related implementation details, including inactivity expiration,
+refresh-token validation, and cookie security attributes.
+================================================
+
+================================================ 
+Date: 2026-11-20
+Student: Ahmed Hossam
+Tool: ChatGPT 
+Related Requirement: Guest Access /
+Protected Actions Nature of AI contribution: Requirement-gap analysis
+and implementation planning Prompt: Check whether the implementation
+satisfies the requirement that guests who attempt to book, review, or
+create a post are redirected to login and returned to the original
+action after logging in. The current development URL is localhost, and
+the email pages are served by the NestJS backend.
+
+How the output was used: Used the review to identify a missing frontend
+behavior: backend API authorization alone does not implement the browser
+redirect-and-return flow. The frontend login redirect and
+return-to-action behavior remains to be implemented.
+================================================
+
+================================================ 
+Date: 2026-11-20
+Student: Ahmed Hossam 
+Tool: ChatGPT
+ Related Requirement: Authentication
+Testing Nature of AI contribution: Test planning for bug fixes and
+existing functionality Prompt: List the tests I should perform for
+registration, email verification, login, account lockout, access and
+refresh tokens, inactivity timeout, password recovery, booking
+restrictions, guest redirects, and email notifications.
+
+How the output was used: Used the generated checklist to manually test
+existing authentication functionality and verify fixes, while
+identifying flows that still require implementation or testing.
+================================================
+
+Date: 2026-11-20
+Member: Philopateer George Refaat
+Branch: feature/HTL-26-review-reply
+Requirements: HTL-26 (optional bonus)
+Tool: Claude
+What I asked:
+- Implement a hotel moderator reply to a review (POST /api/reviews/:id/reply): one reply per review, replaced when posted again, shown inside the reviews list, with an in-app notification to the reviewer.
+What the AI produced:
+- ReplyReviewDto, the reply sub-document on the Review schema, ReviewsService.reply() (moderator of the review's hotel only, hidden reviews rejected, notification on the first reply), the controller route and the REVIEW_REPLIED notification type.
+What I did myself:
+- Reviewed the code against the project requirements and the repo, created a hotel moderator and tested the reply, the replacement, validation and role checks in Swagger, built, committed. The test review was inserted directly in the database because no hotel stay could be Completed today.
+
+================================================
+Date: 2026-11-20
+Student: Ahmed Hossam
+Branch: feature/FLT-28-seat-selection
+Related Requirement: FLT-28 — Seat Selection
+Tool: Claude
+Prompt:
+Implement requirement FLT-28 (Seat Selection) for registered users booking flights. Allow users to view available seats and select seats per passenger during or after flight booking, subject to cabin class and availability.
+
+How the output was used:
+Used the guidance and architecture plan to review branch setup, schema design for seat assignment, availability checks, and controller/service integration for seat selection.
+================================================
