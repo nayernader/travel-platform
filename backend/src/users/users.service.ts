@@ -30,31 +30,59 @@ export class UsersService {
     return this.userModel.findOne({ email: email.toLowerCase().trim() });
   }
   
-  /** ACC-02: loads the hidden verification fields too. */
+  /** Loads the hidden email verification fields. */
   findByEmailWithVerification(email: string) {
     return this.userModel
       .findOne({ email: email.toLowerCase().trim() })
-      .select('+emailVerificationCodeHash +emailVerificationExpiresAt +emailVerificationAttempts +emailVerificationSentAt');
+      .select(
+        '+emailVerificationTokenHash +emailVerificationExpiresAt +emailVerificationSentAt',
+      );
   }
 
-    /** ACC-07: loads the hidden reset fields too. */
+  /** Loads the hidden password reset fields. */
   findByEmailWithReset(email: string) {
     return this.userModel
       .findOne({ email: email.toLowerCase().trim() })
-      .select('+passwordResetCodeHash +passwordResetExpiresAt +passwordResetAttempts +passwordResetSentAt');
+      .select(
+        '+passwordResetTokenHash +passwordResetExpiresAt +passwordResetSentAt',
+      );
+  }
+
+  /** Atomically verifies the email and consumes the verification token. */
+  markEmailVerified(id: string, tokenHash: string) {
+    return this.userModel.findOneAndUpdate(
+      {
+        _id: id,
+        emailVerified: false,
+        emailVerificationTokenHash: tokenHash,
+        emailVerificationExpiresAt: { $gt: new Date() },
+      },
+      {
+        $set: { emailVerified: true },
+        $unset: {
+          emailVerificationTokenHash: 1,
+          emailVerificationExpiresAt: 1,
+          emailVerificationSentAt: 1,
+        },
+      },
+      { returnDocument: 'after' },
+    );
   }
 
   /**
-   * ACC-07: sets the new password in ONE atomic update, only if the code is still valid and the
-   * account is ACTIVE. Also revokes every refresh token, removes any lockout and wipes the code,
-   * so the same code can never be used twice.
+   * Atomically validates and consumes the reset token.
+   * Also revokes the current refresh token.
    */
-  completePasswordReset(id: string, codeHash: string, passwordHash: string) {
+  completePasswordReset(
+    id: string,
+    tokenHash: string,
+    passwordHash: string,
+  ) {
     return this.userModel.findOneAndUpdate(
       {
         _id: id,
         status: UserStatus.ACTIVE,
-        passwordResetCodeHash: codeHash,
+        passwordResetTokenHash: tokenHash,
         passwordResetExpiresAt: { $gt: new Date() },
       },
       {
@@ -62,28 +90,14 @@ export class UsersService {
           passwordHash,
           mustChangePassword: false,
           failedLoginAttempts: 0,
-          passwordResetAttempts: 0,
-          emailVerified: true, // they received the code at this address
         },
         $unset: {
           refreshTokenHash: 1,
           lockUntil: 1,
-          passwordResetCodeHash: 1,
+          passwordResetTokenHash: 1,
           passwordResetExpiresAt: 1,
           passwordResetSentAt: 1,
         },
-      },
-      { returnDocument: 'after' },
-    );
-  }
-  
-  /** ACC-02: marks the account verified and wipes the code. */
-  markEmailVerified(id: string) {
-    return this.userModel.findOneAndUpdate(
-      { _id: id, emailVerified: false },
-      {
-        $set: { emailVerified: true, emailVerificationAttempts: 0 },
-        $unset: { emailVerificationCodeHash: 1, emailVerificationExpiresAt: 1, emailVerificationSentAt: 1 },
       },
       { returnDocument: 'after' },
     );

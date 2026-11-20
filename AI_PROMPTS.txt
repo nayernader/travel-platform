@@ -727,6 +727,51 @@ What I did myself:
 
 
 ==================================================
+
+
+Date: 2026-11-19
+Student: Ahmed Hossam
+Tool: Claude
+Related Requirement: ACC-02
+Prompt:
+Implement email verification for registration: a random token whose hash is
+stored, an email with a verification code sent from SMTP settings in .env,
+a public verify-email endpoint, and blocking of booking and payment routes
+for unverified users.
+
+How the output was used:
+Used the token flow, mail service and guard check as a base. I reviewed it,
+set the SMTP values in my own .env, and tested register, verify, reuse,
+expiry and login in Swagger.
+
+Date: 2026-11-19
+Student: Ahmed Hossam
+Tool: Claude
+Related Requirement: ACC-07
+Prompt:
+Implement forgot-password and reset-password: a 6-digit code emailed to the
+user, only its hash stored, 15-minute expiry, limited wrong attempts, a
+generic response that does not reveal whether an email exists, revoked
+refresh tokens after a reset, and rate limiting on the forgot endpoint.
+
+How the output was used:
+Used the code flow, atomic reset update and throttling as a base. I
+reviewed it, set the SMTP values in my own .env, and tested forgot, reset,
+reuse, expiry, lockout and suspended accounts in Swagger.
+
+Date: 2026-11-19
+Student: Ahmed Hossam
+Tool: Claude
+Related Requirement: GEN-01 (email notifications bonus)
+Prompt:
+Send an email alongside the existing in-app notifications for booking,
+refund, flight change and account or provider status events, reusing the
+mail service, without ever breaking the main action.
+
+How the output was used:
+Used the single hook in NotificationsService.notify and the subject map as
+a base. I reviewed it, tested it with a mail test inbox, with SMTP empty
+and with a wrong SMTP password in Swagger.
 Date: 2026-11-20
 Member: Philopateer George Refaat 
 Branch: feature/ITN-27-attach-bookings
@@ -738,4 +783,3 @@ What the AI produced:
 - AttachBookingDto, ItineraryBookingsService (ownership check, CONFIRMED-only rule, atomic attach and detach), ItineraryBookingsController, the attachedBookings field on the Itinerary schema, and removing attachedBookings from the public itinerary view.
 What I did myself:
 - Reviewed the code against the project requirements and the repo, ran a real Stripe test-mode payment to get a confirmed flight booking, tested attach, duplicate (409), invalid body (400), detach and the public view in Swagger, merged the latest develop and resolved the conflict in itineraries.module.ts with the ITN-28 PDF code, built, committed.
-==================================================

@@ -11,6 +11,7 @@ import { UserStatus } from '../common/enums/user-status.enum';
 import { NotificationsService } from '../notifications/notifications.service';
 import type { UserDocument } from '../users/schemas/user.schema';
 import { CreateModeratorDto } from './dto/moderators.dto';
+import { MailService } from '../mail/mail.service';
 
 export type ProviderType = 'airline' | 'hotel';
 
@@ -20,6 +21,7 @@ export class AdminProvidersService {
     @InjectConnection() private connection: Connection,
     private readonly audit: AuditService,
     private readonly notifications: NotificationsService,
+    private readonly mail: MailService,
   ) {}
 
   // Team contracts: 'Airline' and 'Hotel' are read by model name
@@ -51,6 +53,16 @@ export class AdminProvidersService {
       targetId: user.id,
       details: { email: user.email, role: user.role, providerType: type, providerId: provider.id },
     });
+
+    // GEN-01-B: invitation email. Not awaited and it never throws, so the account is created whatever happens.
+    // The temporary password is NOT in the email: the admin gives it out separately.
+    void this.mail.sendModeratorInvitation(
+      user.email,
+      user.name,
+      dto.role === Role.AIRLINE_MODERATOR ? 'airline moderator' : 'hotel moderator',
+      provider.name,
+    );
+
     // Never return the password or its hash
     return {
       id: user.id,

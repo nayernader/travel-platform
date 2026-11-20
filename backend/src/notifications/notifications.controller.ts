@@ -13,7 +13,10 @@ export class NotificationsController {
   constructor(private readonly notifications: NotificationsService) {}
 
   @Get()
-  @ApiOperation({ summary: 'My notifications, newest first', description: 'GEN-01' })
+  @ApiOperation({
+    summary: 'My notifications, newest first',
+    description: 'GEN-01. Some notifications (bookings, refunds, flight changes, account and provider status) are also sent by email when SMTP is configured.',
+  })
   list(@CurrentUser() user: UserDocument, @Query() query: PaginationQueryDto) {
     return this.notifications.list(user.id, query.page);
   }
