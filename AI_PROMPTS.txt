@@ -36,6 +36,44 @@ What I did myself:
 No secrets (connection string, JWT secrets, passwords, API keys) were shared with the AI.
 
 
+================================================
+Date: 2026-11-06
+Student: Ahmad Tarek
+Tool: Claude
+Related Requirement: General (project understanding), FLT-01 to FLT-04, FLT-08, FLT-09, FLT-30, GEN-06
+Prompt: I have attached the project description, the requirements sheet, the team plan and my Member 2 guide. First, give me a brief explanation of the overall plan. Then walk me through my Member 2 steps one at a time, in detail, explaining everything from the smallest detail to the biggest.
+How the output was used: Used the overview to understand the 8-member chain, my place in it (Airlines and Flights, Nov 3 to 6), the MVC/NestJS structure, and the Git workflow (feature branch, pull request to develop, leader review). Used the step-by-step breakdown of Section 0 (setup) and Branch 1 (FLT-01-02) as a reading aid alongside my guide.
+================================================
+
+================================================
+Date: 2026-11-06
+Student: Ahmad Tarek
+Tool: Claude
+Related Requirement: Setup (Section 0)
+Prompt: I don't understand where to type the Git commands from my guide. I'm using VS Code and the repo is already on my machine. Explain where each command should be typed and why.
+How the output was used: Learned to open the integrated terminal in VS Code (Terminal > New Terminal), check the current branch with git status, switch to develop, pull, and create my feature branch. Also learned to create folders and files from the VS Code Explorer.
+================================================
+
+================================================
+Date: 2026-11-06
+Student: Ahmad Tarek
+Tool: Claude
+Related Requirement: Setup (Section 0)
+Prompt: git status gives "fatal: not a git repository" in my project folder, which came from a downloaded ZIP of the repo. I then ran git clone, which worked, but git status failed again in the parent folder. Here is the output. What is going wrong and what should I do?
+How the output was used: Understood that a downloaded ZIP has no .git history and that Git commands must run inside the cloned folder. Cloned the repo into C:\Users\Acer\projects, moved into the travel-platform folder, opened it in VS Code and continued from there.
+================================================
+
+================================================
+Date: 2026-11-06
+Student: Ahmad Tarek
+Tool: Claude
+Related Requirement: Setup (Section 0), shared names check
+Prompt: Here is my git log output, the contents of backend/src, and the results of my Select-String checks for providerId, AIRLINE_MODERATOR and the shared helpers (Auth, CurrentUser, Role, ReferenceDataService, AuditService, NotificationsService, getSkip, buildPage). Is Member 1's shared prep merged into develop, and do the names my code will import actually exist?
+How the output was used: Confirmed that Member 1's shared prep was merged into develop and that the names my code imports exist. Fixed a PowerShell command (Select-String has no -Recurse, so use Get-ChildItem -Recurse | Select-String). Used git config core.pager cat to stop git log from opening the pager. Checked the leftover remote branch name before creating mine.
+================================================
+
+
+
 
 
 
@@ -444,6 +482,84 @@ How the output was used:
 Created review.dto.ts, reviews.service.ts, reviews.controller.ts, updated review.schema.ts to ensure proper Types.ObjectId typing, and registered them in HotelBookingsModule. Verified clean build.
 ==================================================
 ==================================================
+Date: 2026-11-14
+Student: Tony Hany (Member 6)
+Tool: Claude
+Related Requirement: Setup / ITN-18
+Prompt:
+I am member 6, go with me step by step from setup to test on Swagger to finish my part, explain every step very simply.
+
+How the output was used:
+I followed the setup steps (Git config, clone, develop branch, npm install, .env, running the backend) and fixed my startup error (MONGODB_URI undefined) by restarting after saving .env. I also learned my port was 3001 and kept real keys out of commits.
+
+
+Date: 2026-11-14
+Student: Tony Hany (Member 6)
+Tool: Claude
+Related Requirement: ITN-18, ACC-09 (exchange rates)
+Prompt:
+I cloned the repo and put the .env inside backend. Send the code again and tell me exactly which code to paste in which file. (Exchange-rate service: schema, service, controller, module, and the FXRatesAPI URL.)
+
+How the output was used:
+I created the exchange-rates module (schema, service with daily cron and cached fallback, controller GET /api/exchange-rates, module) and registered it in app.module.ts. I fixed the missing EXCHANGE_RATE_API_URL in .env after reading the warning in the log, tested the endpoint in Swagger, then committed, pushed and opened the PR.
+
+
+Date: 2026-11-14
+Student: Tony Hany (Member 6)
+Tool: Claude
+Related Requirement: PAY-04 (single platform currency)
+Prompt:
+In my project the currencies file is currencies.ts, not currency.ts. What should I do with PLATFORM_CURRENCY?
+
+How the output was used:
+I kept the leader's currencies.ts unchanged and created a separate platform-currency.ts exporting PLATFORM_CURRENCY (default USD), which the exchange-rate service imports.
+
+
+Date: 2026-11-15
+Student: Tony Hany (Member 6)
+Tool: Claude
+Related Requirement: PAY-02 (provider policies and acceptance)
+Prompt:
+I need to work on the second one, tell me exactly what you need to start, I am late. (Then I pasted the output of the commands listing the payments folder, booking service methods and schemas.)
+
+How the output was used:
+I created policies.service.ts, policies.controller.ts, the PolicyAcceptance schema and updated payments.module.ts. I fixed TypeScript errors (ObjectId types, "import type" for UserDocument, Auth/CurrentUser imports). I tested GET policies and POST accept-policies in Swagger as a traveler, then pushed and opened the PR.
+
+
+Date: 2026-11-17
+Student: Tony Hany (Member 6)
+Tool: Claude
+Related Requirement: PAY-01 (Stripe payment and webhook)
+Prompt:
+Lets continue with the third one and remember I didn't merge yet, so continue with my branch. (Then: step-by-step Stripe key, Stripe CLI, webhook secret, and filling payments.service.ts, payments.controller.ts, payments.module.ts.)
+
+How the output was used:
+I installed the stripe package, put STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET only in .env, ran stripe listen to forward webhooks, and created the Payment schema, Stripe provider, BookingPort, PaymentsService and PaymentsController (create payment, retry, signed webhook). I fixed the flight/hotel method names (markPaid vs confirmPaid), the exports and the "import type" errors. The 6 payment and policy endpoints appeared in Swagger.
+
+
+Date: 2026-11-17
+Student: Tony Hany (Member 6)
+Tool: Claude
+Related Requirement: PAY-03 (refunds)
+Prompt:
+Now send me the codes to paste in each one. (Refund schema, RefundsService listening to booking.refund.requested, RefundsController, module and handleEvent edits.)
+
+How the output was used:
+I created the Refund schema, RefundsService (Stripe refund, status, notification REFUND_UPDATED, automatic refund for late payments), RefundsController and registered them in payments.module.ts. I fixed a misplaced closing brace and missing imports, confirmed the Refunds section in Swagger, then pushed and opened the PR.
+
+
+Date: 2026-11-17
+Student: Tony Hany (Member 6)
+Tool: Claude
+Related Requirement: Team workflow (merging PAY-01 to PAY-04, ITN-18)
+Prompt:
+The admin wants to know the correct and best sequence to merge my work. Send it with a neat way to send it to the leader.
+
+How the output was used:
+I sent the leader the merge order (exchange-rates, PAY-02, PAY-01, PAY-03) with "Create a merge commit", plus the .env variables everyone needs after the merge.
+
+
+
 Date: 2026-11-17
 Member:  Philopateer George Refaat
 Branch: feature/ITN-01-03-itinerary-crud
