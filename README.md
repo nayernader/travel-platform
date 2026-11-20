@@ -199,6 +199,7 @@ All paths start with `/api`. Role "Logged in" means any logged-in account; "Publ
 | POST | `/posts` | Logged in |
 | GET | `/posts/mine`, `/posts/mine/:id` | Logged in |
 | PATCH, DELETE | `/posts/:id` | Logged in (author) |
+| PATCH | `/posts/:id/itinerary` | Logged in (author, itinerary owner), BLG-13 optional: body `{ "itineraryId": "<id>" }` attaches one of your public itineraries, `{ "itineraryId": null }` detaches it. `GET /posts/:id` then returns it as `itinerary` while it stays public and not hidden |
 | POST | `/posts/:id/images` | Logged in (author) |
 | DELETE | `/posts/:id/images`, `/posts/:id/images/:imageId` | Logged in (author) |
 | POST | `/posts/:id/comments` | Logged in |
