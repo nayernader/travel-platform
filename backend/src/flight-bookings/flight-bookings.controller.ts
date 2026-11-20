@@ -96,6 +96,7 @@ export class FlightBookingsController {
   cancel(@Param('id') id: string, @CurrentUser() user: UserDocument) {
     return this.bookings.cancel(id, user.id);
   }
+  @Auth(Role.USER)
   @Get(':id')
   @ApiOperation({
     summary: 'One of my flight bookings with its flights (confirmation page)',
