@@ -2,7 +2,7 @@ import {
   BadRequestException, Body, Controller, Get, Headers, HttpCode, Inject, Param, Post, Req,
 } from '@nestjs/common';
 import type { RawBodyRequest } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
 import Stripe from 'stripe';
 import { PaymentsService } from './payments.service';
@@ -43,6 +43,32 @@ export class PaymentsController {
     }
     await this.payments.handleEvent(event);
     return { received: true };
+  }
+
+  @Auth()
+  @RequireVerifiedEmail()
+  @Post('flight-change/:bookingId/:changeId')
+  @ApiOperation({
+    summary: 'Pay the fare difference for a pending flight booking change (FLT-27)',
+    description:
+      'Creates a Stripe PaymentIntent for the extra fare owed when changing to a more expensive flight. ' +
+      'Only valid while the pending change is in PENDING_PAYMENT status and has not expired. ' +
+      'Returns the clientSecret to complete payment on the client. ' +
+      'Calling again while a REQUIRES_PAYMENT or FAILED intent already exists re-uses it (idempotent).',
+  })
+  @ApiParam({ name: 'bookingId', description: 'The confirmed flight booking to change' })
+  @ApiParam({ name: 'changeId', description: 'The changeId returned by POST /flight-bookings/:id/change' })
+  @ApiResponse({ status: 201, description: 'PaymentIntent clientSecret, amount and currency' })
+  @ApiResponse({ status: 401, description: 'Not logged in' })
+  @ApiResponse({ status: 403, description: 'Not the booking owner or email not verified' })
+  @ApiResponse({ status: 404, description: 'Booking or change not found' })
+  @ApiResponse({ status: 409, description: 'Change does not need payment, has expired, or is already applied' })
+  createFlightChange(
+    @CurrentUser() user: UserDocument,
+    @Param('bookingId') bookingId: string,
+    @Param('changeId') changeId: string,
+  ) {
+    return this.payments.createFlightChange(user, bookingId, changeId);
   }
 
   @Auth()

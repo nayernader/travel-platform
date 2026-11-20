@@ -930,3 +930,16 @@ What the AI produced:
 - ReplyReviewDto, the reply sub-document on the Review schema, ReviewsService.reply() (moderator of the review's hotel only, hidden reviews rejected, notification on the first reply), the controller route and the REVIEW_REPLIED notification type.
 What I did myself:
 - Reviewed the code against the project requirements and the repo, created a hotel moderator and tested the reply, the replacement, validation and role checks in Swagger, built, committed. The test review was inserted directly in the database because no hotel stay could be Completed today.
+
+================================================
+Date: 2026-11-20
+Student: Ahmed Hossam
+Branch: feature/FLT-28-seat-selection
+Related Requirement: FLT-28 — Seat Selection
+Tool: Claude
+Prompt:
+Implement requirement FLT-28 (Seat Selection) for registered users booking flights. Allow users to view available seats and select seats per passenger during or after flight booking, subject to cabin class and availability.
+
+How the output was used:
+Used the guidance and architecture plan to review branch setup, schema design for seat assignment, availability checks, and controller/service integration for seat selection.
+================================================

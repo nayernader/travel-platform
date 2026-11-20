@@ -1,3 +1,4 @@
+
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import {
@@ -43,8 +44,13 @@ export class PassengerDto {
   @Length(2, 100)
   fullName: string;
 
-  @ApiProperty({ example: '1995-04-12', description: 'Date of birth, YYYY-MM-DD' })
-  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'dateOfBirth must look like 1995-04-12' })
+  @ApiProperty({
+    example: '1995-04-12',
+    description: 'Date of birth, YYYY-MM-DD',
+  })
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, {
+    message: 'dateOfBirth must look like 1995-04-12',
+  })
   dateOfBirth: string;
 
   @ApiProperty({ example: 'A12345678', description: 'Passport or ID number' })
@@ -56,20 +62,29 @@ export class PassengerDto {
   @ApiProperty({
     enum: PassengerType,
     example: PassengerType.ADULT,
-    description: 'Adult 12+, child 2 to 11, infant under 2. Checked against the date of birth.',
+    description:
+      'Adult 12+, child 2 to 11, infant under 2. Checked against the date of birth.',
   })
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim().toUpperCase() : value))
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.trim().toUpperCase() : value,
+  )
   @IsEnum(PassengerType)
   type: PassengerType;
 
-  @ApiPropertyOptional({ example: 1, description: 'Extra bags beyond the free allowance' })
+  @ApiPropertyOptional({
+    example: 1,
+    description: 'Extra bags beyond the free allowance',
+  })
   @IsOptional()
   @IsInt()
   @Min(0)
   @Max(10)
   extraBags?: number;
 
-  @ApiPropertyOptional({ example: 20, description: 'Weight of each extra bag in kg' })
+  @ApiPropertyOptional({
+    example: 20,
+    description: 'Weight of each extra bag in kg',
+  })
   @IsOptional()
   @IsNumber()
   @Min(0)
@@ -79,7 +94,8 @@ export class PassengerDto {
 export class BookingRequestDto {
   @ApiProperty({
     type: [SegmentDto],
-    description: '1 segment = one way, 2 segments = round trip (outbound first)',
+    description:
+      '1 segment = one way, 2 segments = round trip (outbound first)',
   })
   @IsArray()
   @ArrayMinSize(1)
@@ -95,4 +111,18 @@ export class BookingRequestDto {
   @ValidateNested({ each: true })
   @Type(() => PassengerDto)
   passengers: PassengerDto[];
+}
+
+export class ChangeFlightBookingDto {
+  @ApiProperty({
+    type: [SegmentDto],
+    description:
+      'Replacement flights. Must have the same route and cabin as the original booking.',
+  })
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(2)
+  @ValidateNested({ each: true })
+  @Type(() => SegmentDto)
+  segments: SegmentDto[];
 }
