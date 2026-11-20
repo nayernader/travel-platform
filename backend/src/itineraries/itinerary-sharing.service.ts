@@ -97,7 +97,7 @@ export class ItinerarySharingService {
   }
 
   /** A public itinerary, or 404 for private, hidden, deleted or deactivated-owner ones. */
-  private async findPublic(id: string) {
+   async findPublic(id: string)  {
     if (!isValidObjectId(id)) throw new NotFoundException('Itinerary not found');
     const it = await this.its.model.findOne({ _id: id, visibility: Visibility.PUBLIC, hidden: { $ne: true } });
     const owner = it ? await this.users.findById(it.user) : null;

@@ -24,6 +24,8 @@ import { ItineraryBudgetSummaryService } from './itinerary-budget-summary.servic
 import { ItineraryBudgetSummaryController } from './itinerary-budget-summary.controller';
 import { ItinerarySuggestionsService } from './itinerary-suggestions.service';
 import { ItinerarySuggestionsController } from './itinerary-suggestions.controller';
+import { ItineraryPdfService } from './itinerary-pdf.service';
+import { ItineraryPdfController } from './itinerary-pdf.controller';
 
 @Module({
   imports: [
@@ -48,6 +50,7 @@ import { ItinerarySuggestionsController } from './itinerary-suggestions.controll
     ItineraryBudgetSummaryController,
     ItinerarySuggestionsController,
     ItineraryCloneController,
+    ItineraryPdfController,
   ],
   providers: [
     ItinerariesService,
@@ -57,7 +60,9 @@ import { ItinerarySuggestionsController } from './itinerary-suggestions.controll
     ItinerarySharingService,
     ItineraryBudgetSummaryService,
     ItinerarySuggestionsService,
+    ItineraryPdfService,
   ],
+
   exports: [
     ItinerariesService,
     ItineraryDaysService,
