@@ -11,5 +11,6 @@ export enum NotificationType {
   REFUND_UPDATED = 'REFUND_UPDATED',                      // NEW
   PROVIDER_STATUS_CHANGED = 'PROVIDER_STATUS_CHANGED',    // NEW
   CONTENT_MODERATED = 'CONTENT_MODERATED',                // NEW
-  PASSWORD_RESET = 'PASSWORD_RESET',                      // NEW
+  PASSWORD_RESET = 'PASSWORD_RESET',          
+  REVIEW_REPLIED = 'REVIEW_REPLIED',            // NEW
 }
