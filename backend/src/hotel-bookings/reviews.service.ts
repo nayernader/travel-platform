@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { isValidObjectId, Model, Types } from 'mongoose';
 import { Review, ReviewDocument } from './schemas/review.schema';
 import {
   HotelBooking,
@@ -14,9 +14,12 @@ import {
 } from './schemas/hotel-booking.schema';
 import { Hotel, HotelDocument } from '../hotels/schemas/hotel.schema';
 import { BookingStatus } from '../common/enums/booking-status.enum';
-import { CreateReviewDto, UpdateReviewDto } from './dto/review.dto';
+import { CreateReviewDto, ReplyReviewDto, UpdateReviewDto } from './dto/review.dto';
 import { buildPage, getSkip, PAGE_SIZE } from '../common/utils/pagination';
 import type { UserDocument } from '../users/schemas/user.schema';
+import { NotificationType } from '../common/enums/notification-type.enum';
+import { NotificationsService } from '../notifications/notifications.service';
+
 
 @Injectable()
 export class ReviewsService {
@@ -25,6 +28,7 @@ export class ReviewsService {
     @InjectModel(HotelBooking.name)
     private bookings: Model<HotelBookingDocument>,
     @InjectModel(Hotel.name) private hotels: Model<HotelDocument>,
+    private readonly notifications: NotificationsService,
   ) {}
 
   /** Hotel average and count, recalculated from the visible reviews. */
@@ -94,6 +98,27 @@ export class ReviewsService {
     await r.deleteOne();
     await this.recalc(r.hotel);
     return { deleted: true };
+  }
+    /** HTL-26: the moderator of the review's hotel replies (one reply, posting again replaces it). */
+  async reply(user: UserDocument, id: string, dto: ReplyReviewDto) {
+    if (!isValidObjectId(id)) throw new NotFoundException('Review not found');
+    const r = await this.reviews.findById(id);
+    if (!r || r.hidden) throw new NotFoundException('Review not found');
+    if (!user.providerId || user.providerId.toString() !== r.hotel.toString()) {
+      throw new ForbiddenException('You can only reply to reviews of your own hotel');
+    }
+    const first = !r.reply;
+    r.reply = { text: dto.text, by: user._id, repliedAt: new Date() };
+    await r.save();
+    if (first) {
+      await this.notifications.notify(
+        r.user,
+        NotificationType.REVIEW_REPLIED,
+        'The hotel replied to your review',
+        { reviewId: r.id, hotelId: r.hotel.toString() },
+      );
+    }
+    return r;
   }
 
   /** HTL-24: newest first, paginated, hidden reviews excluded. */

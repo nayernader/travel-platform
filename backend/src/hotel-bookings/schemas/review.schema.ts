@@ -3,6 +3,21 @@ import { HydratedDocument, Schema as MongooseSchema, Types } from 'mongoose';
 
 export type ReviewDocument = HydratedDocument<Review>;
 
+@Schema({ _id: false })
+export class ReviewReply {
+  @Prop({ required: true, maxlength: 1000 })
+  text: string;
+
+  /** the hotel moderator who wrote it */
+  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true })
+  by: Types.ObjectId;
+
+  @Prop({ required: true })
+  repliedAt: Date;
+}
+export const ReviewReplySchema = SchemaFactory.createForClass(ReviewReply);
+
+
 @Schema({ timestamps: true })
 export class Review {
   @Prop({
@@ -37,6 +52,10 @@ export class Review {
 
   @Prop({ default: false })
   hidden: boolean; // set by admin moderation (GEN-10)
+
+    /** HTL-26: the hotel's single reply (posting again replaces it) */
+  @Prop({ type: ReviewReplySchema })
+  reply?: ReviewReply;
 }
 
 export const ReviewSchema = SchemaFactory.createForClass(Review);

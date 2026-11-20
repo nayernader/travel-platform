@@ -10,10 +10,11 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ReviewsService } from './reviews.service';
-import { CreateReviewDto, UpdateReviewDto } from './dto/review.dto';
+import { CreateReviewDto, UpdateReviewDto ,ReplyReviewDto} from './dto/review.dto';
 import { Auth } from '../auth/decorators/auth.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { UserDocument } from '../users/schemas/user.schema';
+import { Role } from '../common/enums/role.enum';
 
 @ApiTags('Hotel reviews')
 @Controller()
@@ -47,6 +48,17 @@ export class ReviewsController {
   @ApiOperation({ summary: 'Delete my review (HTL-23)' })
   remove(@CurrentUser() user: UserDocument, @Param('id') id: string) {
     return this.reviews.remove(user, id);
+  }
+
+  @Auth(Role.HOTEL_MODERATOR)
+  @Post('reviews/:id/reply')
+  @ApiOperation({ summary: 'Hotel moderator replies to a review of their hotel (HTL-26, optional)' })
+  reply(
+    @CurrentUser() user: UserDocument,
+    @Param('id') id: string,
+    @Body() dto: ReplyReviewDto,
+  ) {
+    return this.reviews.reply(user, id, dto);
   }
 
   @Get('hotels/:id/reviews')
