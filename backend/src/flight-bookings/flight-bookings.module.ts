@@ -5,12 +5,15 @@ import { FlightBookingsController } from './flight-bookings.controller';
 import { FlightBookingsService } from './flight-bookings.service';
 import { FlightBooking, FlightBookingSchema } from './schemas/flight-booking.schema';
 import { FlightsModule } from '../flights/flights.module';
-
+import { SeatClaim, SeatClaimSchema } from './schemas/seat-claim.schema';
 import { AirlinesModule } from '../airlines/airlines.module';
 
 @Module({
  imports: [
-    MongooseModule.forFeature([{ name: FlightBooking.name, schema: FlightBookingSchema }]),
+    MongooseModule.forFeature([
+      { name: FlightBooking.name, schema: FlightBookingSchema },
+      { name: SeatClaim.name, schema: SeatClaimSchema },
+    ]),
     FlightsModule,
     AirlinesModule,
   ],
