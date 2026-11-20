@@ -13,6 +13,7 @@ import type { UserDocument } from '../users/schemas/user.schema';
 import { SearchFlightsDto } from './dto/search-flights.dto';
 import { UpdateFlightDto } from './dto/update-flight.dto';
 import { UpdateCabinDto } from './dto/update-cabin.dto';
+import { SeatMapQueryDto } from './dto/seat-map-query.dto';
 
 @ApiTags('Flights')
 @Controller('flights')
@@ -133,6 +134,22 @@ export class FlightsController {
     });
   }
 
+  @Auth(Role.USER)
+  @Get(':id/seat-map')
+  @ApiOperation({
+    summary: 'Seat map of one cabin: every seat marked AVAILABLE or TAKEN',
+    description: 'FLT-28. Only for Scheduled flights that have not departed.',
+  })
+  @ApiResponse({ status: 200, description: 'Seats of the cabin with their status' })
+  @ApiResponse({ status: 400, description: 'Invalid cabin class' })
+  @ApiResponse({ status: 401, description: 'Not logged in' })
+  @ApiResponse({ status: 403, description: 'Only registered users' })
+  @ApiResponse({ status: 404, description: 'Flight or cabin not found' })
+  @ApiResponse({ status: 409, description: 'The flight is not Scheduled or has departed' })
+  seatMap(@Param('id') id: string, @Query() query: SeatMapQueryDto) {
+    return this.flights.seatMap(id, query.cabinClass);
+  }
+  
   @Get('search')
   @ApiOperation({
     summary: 'Search one-way or round-trip flights by route, local date and passengers',

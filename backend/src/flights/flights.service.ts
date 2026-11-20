@@ -11,12 +11,14 @@ import { Model, Schema as MongooseSchema, Types } from 'mongoose';
 import { UpdateFlightDto } from './dto/update-flight.dto';
 import { UpdateCabinDto } from './dto/update-cabin.dto';
 import { FlightBooking, FlightBookingDocument } from '../flight-bookings/schemas/flight-booking.schema';
+import { SeatClaim, SeatClaimDocument } from '../flight-bookings/schemas/seat-claim.schema';
+import { isValidSeat, seatLabels } from '../flight-bookings/seat-layout.util';
 import { BookingStatus } from '../common/enums/booking-status.enum';
 import { NotificationType } from '../common/enums/notification-type.enum';
 import { NotificationsService } from '../notifications/notifications.service';
 import { DateTime } from 'luxon';
 
-import { Flight, FlightDocument, FlightStatus } from './schemas/flight.schema';
+import { CabinClass, Flight, FlightDocument, FlightStatus } from './schemas/flight.schema';
 import { CreateFlightDto } from './dto/create-flight.dto';
 import { CreateCabinDto } from './dto/cabin.dto';
 import { toFlightView } from './flight.view';
@@ -42,6 +44,7 @@ export class FlightsService {
     @InjectModel(Flight.name) private model: Model<FlightDocument>,
     @InjectModel(Airline.name) private airlineModel: Model<AirlineDocument>,
     @InjectModel(FlightBooking.name) private bookingModel: Model<FlightBookingDocument>,
+    @InjectModel(SeatClaim.name) private seatClaimModel: Model<SeatClaimDocument>,
     private readonly ref: ReferenceDataService,
     private readonly events: EventEmitter2,
     private readonly notifications: NotificationsService,
@@ -337,6 +340,20 @@ export class FlightsService {
           `${cabin.cabinClass} cannot go below ${bookedOrHeld} seats: they are already booked or held`,
         );
       }
+      if (dto.totalSeats < cabin.totalSeats) {
+        const claimed = await this.seatClaimModel
+          .find({ flight: flight._id, cabinClass: cabin.cabinClass })
+          .select('seatNumber')
+          .lean();
+        const outside = claimed
+          .filter((c) => !isValidSeat(cabin.cabinClass, dto.totalSeats!, c.seatNumber))
+          .map((c) => c.seatNumber);
+        if (outside.length) {
+          throw new ConflictException(
+            `Seats ${outside.join(', ')} are already assigned and would no longer exist. Reduce fewer seats.`,
+          );
+        }
+      }
       const diff = dto.totalSeats - cabin.totalSeats;
       // the same difference is applied to the available seats, in ONE atomic update.
       // The filter makes it fail if a hold took seats in the meantime.
@@ -536,5 +553,32 @@ export class FlightsService {
 
     const result = buildPage(items, rows.length, q.page);
     return rows.length === 0 ? { ...result, message: 'No flights found' } : result;
+  }
+
+    // ---------------- FLT-28: seat map ----------------
+  async seatMap(id: string, cabinClass: CabinClass) {
+    if (!Types.ObjectId.isValid(id)) throw new NotFoundException('Flight not found');
+    const flight = await this.model.findById(id).lean();
+    if (!flight) throw new NotFoundException('Flight not found');
+    if (flight.status !== FlightStatus.SCHEDULED || flight.departureTimeUtc <= new Date()) {
+      throw new ConflictException('Seats can only be viewed for flights that have not departed');
+    }
+    const cabin = flight.cabins.find((c) => c.cabinClass === cabinClass);
+    if (!cabin) throw new NotFoundException(`This flight has no ${cabinClass} cabin`);
+
+    const claims = await this.seatClaimModel.find({ flight: flight._id, cabinClass }).select('seatNumber').lean();
+    const taken = new Set(claims.map((c) => c.seatNumber));
+
+    return {
+      flightId: flight._id.toString(),
+      flightNumber: flight.flightNumber,
+      cabinClass,
+      totalSeats: cabin.totalSeats,
+      takenSeats: taken.size,
+      seats: seatLabels(cabinClass, cabin.totalSeats).map((seatNumber) => ({
+        seatNumber,
+        status: taken.has(seatNumber) ? 'TAKEN' : 'AVAILABLE',
+      })),
+    };
   }
 }

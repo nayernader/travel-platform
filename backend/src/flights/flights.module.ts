@@ -10,12 +10,14 @@ import { AirlinesModule } from '../airlines/airlines.module';
 import { FlightBooking, FlightBookingSchema } from '../flight-bookings/schemas/flight-booking.schema';
 
 import { ReferenceDataModule } from '../reference-data/reference-data.module';
+import { SeatClaim, SeatClaimSchema } from '../flight-bookings/schemas/seat-claim.schema';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: Flight.name, schema: FlightSchema },
       { name: FlightBooking.name, schema: FlightBookingSchema },
+      { name: SeatClaim.name, schema: SeatClaimSchema },
     ]),
     ReferenceDataModule,
     AirlinesModule,

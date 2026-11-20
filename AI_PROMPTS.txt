@@ -943,3 +943,58 @@ Implement requirement FLT-28 (Seat Selection) for registered users booking fligh
 How the output was used:
 Used the guidance and architecture plan to review branch setup, schema design for seat assignment, availability checks, and controller/service integration for seat selection.
 ================================================
+
+================================================
+Date: 2026-11-20
+Student: Ahmed Hossam
+Tool: Claude
+Related Requirement: FLT-28
+Prompt:
+I am working on branch feature/FLT-28-seat-selection in a NestJS + Mongoose
+project. Requirement FLT-28: the system shall allow seat selection. Registered
+users should view available seats for a scheduled flight/cabin and select seat
+numbers (e.g. 12A) for passengers, constrained by cabin class, seat
+availability (no double booking of the same seat) and passenger eligibility
+(infants get no seat). I pasted flights.service.ts, flights.controller.ts,
+flight-bookings.service.ts, flight-bookings.controller.ts, the Flight schema,
+booking.dto.ts and both modules. Inspect them, outline a design plan, then
+implement it.
+How the output was used:
+Used the design outline (derived seat map from cabin class and totalSeats, a
+separate SeatClaim collection, unique indexes as the concurrency lock,
+all-or-nothing PATCH /flight-bookings/:id/seat, GET /flights/:id/seat-map) as
+the basis of the implementation. Reviewed it against our existing
+takeSeats/returnSeats pattern before adopting it.
+================================================
+
+================================================
+Date: 2026-11-20
+Student: Ahmed Hossam
+Tool: Claude
+Related Requirement: FLT-28
+Prompt:
+I want the implementation with no assumptions (after providing the real Flight
+schema, booking DTO and flights module).
+How the output was used:
+Added seat-claim.schema.ts, seat-layout.util.ts (+ spec), select-seats.dto.ts,
+seat-map-query.dto.ts, the selectSeats/getSeats/seatMap service methods, the
+two new controller routes, and the SeatClaim registration in both modules.
+Checked each edit against the existing code before applying it.
+================================================
+
+================================================
+Date: 2026-11-20
+Student: Ahmed Hossam
+Tool: Claude
+Related Requirement: FLT-28
+Prompt:
+I pasted the TypeScript compiler errors from flight-bookings.service.ts and
+flights.service.ts (No overload matches this call, Property 'seatNumber' does
+not exist) together with the current service files.
+How the output was used:
+Found that SeatClaim declared flight and booking as
+MongooseSchema.Types.ObjectId instead of Types.ObjectId, which broke the query
+filter types. Changed the property types in seat-claim.schema.ts and made
+releaseSeats convert ids with new Types.ObjectId(). Re-ran tsc to confirm the
+errors were gone.
+================================================

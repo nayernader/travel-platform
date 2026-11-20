@@ -1,13 +1,4 @@
-
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  Post,
-  StreamableFile,
-  Query,
-} from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, StreamableFile, Query } from '@nestjs/common';
 import {
   ApiOperation,
   ApiProduces,
@@ -27,6 +18,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Role } from '../common/enums/role.enum';
 import type { UserDocument } from '../users/schemas/user.schema';
 import { RequireVerifiedEmail } from '../auth/decorators/require-verified-email.decorator';
+import { SelectSeatsDto } from './dto/select-seats.dto';
 
 @ApiTags('Flight Bookings')
 @Controller('flight-bookings')
@@ -154,6 +146,33 @@ export class FlightBookingsController {
   @ApiResponse({ status: 409, description: 'Booking is not confirmed or the flight has departed' })
   cancel(@Param('id') id: string, @CurrentUser() user: UserDocument) {
     return this.bookings.cancel(id, user.id);
+  }
+
+  @Auth(Role.USER)
+  @Patch(':id/seat')
+  @ApiOperation({
+    summary: 'Choose or change seats for the passengers of my booking on one flight',
+    description:
+      'FLT-28. Allowed while the hold is active (Pending Payment) or after confirmation, until departure. Seats must exist in the booked cabin and be free. Infants get no seat. All-or-nothing: if one seat is taken, none change.',
+  })
+  @ApiResponse({ status: 200, description: 'The booking\'s seats on that flight' })
+  @ApiResponse({ status: 400, description: 'Unknown passenger, infant, seat does not exist, or duplicate' })
+  @ApiResponse({ status: 401, description: 'Not logged in' })
+  @ApiResponse({ status: 403, description: 'Only registered users' })
+  @ApiResponse({ status: 404, description: 'Booking or flight not found (or not yours)' })
+  @ApiResponse({ status: 409, description: 'Seat taken, booking not active, flight departed or change pending' })
+  selectSeats(@Param('id') id: string, @Body() dto: SelectSeatsDto, @CurrentUser() user: UserDocument) {
+    return this.bookings.selectSeats(id, user.id, dto);
+  }
+
+  @Auth(Role.USER)
+  @Get(':id/seats')
+  @ApiOperation({ summary: 'The seats assigned on one of my bookings', description: 'FLT-28' })
+  @ApiResponse({ status: 200, description: 'Seat per passenger per flight' })
+  @ApiResponse({ status: 401, description: 'Not logged in' })
+  @ApiResponse({ status: 404, description: 'Booking not found (or not yours)' })
+  getSeats(@Param('id') id: string, @CurrentUser() user: UserDocument) {
+    return this.bookings.getSeats(id, user);
   }
 
   @Auth(Role.USER)

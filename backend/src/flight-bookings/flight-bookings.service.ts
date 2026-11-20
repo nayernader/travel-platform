@@ -33,6 +33,9 @@ import { FLIGHT_CANCELLED, FlightCancelledEvent } from '../common/events/flight-
 import {
   BookingRequestDto, ChangeFlightBookingDto, PassengerDto, SegmentDto,
 } from './dto/booking.dto';
+import { SeatClaim, SeatClaimDocument } from './schemas/seat-claim.schema';
+import { isValidSeat, normalizeSeat } from './seat-layout.util';
+import { SelectSeatsDto } from './dto/select-seats.dto';
 
 const INFANT_FARE_RATE = 0.1;
 const HOLD_MINUTES = 10;
@@ -47,6 +50,7 @@ export class FlightBookingsService {
     @InjectModel(Flight.name) private flightModel: Model<FlightDocument>,
     @InjectModel(Airline.name) private airlineModel: Model<AirlineDocument>,
     @InjectModel(FlightBooking.name) private bookingModel: Model<FlightBookingDocument>,
+    @InjectModel(SeatClaim.name) private seatClaimModel: Model<SeatClaimDocument>,
     private readonly notifications: NotificationsService,
     private readonly events: EventEmitter2,
   ) {}
@@ -234,6 +238,14 @@ export class FlightBookingsService {
     );
   }
 
+  /** FLT-28: free the seats of a booking, on one flight or on all of its flights. */
+  private async releaseSeats(bookingId: Types.ObjectId | string, flightId?: Types.ObjectId | string) {
+    await this.seatClaimModel.deleteMany({
+      booking: new Types.ObjectId(String(bookingId)),
+      ...(flightId ? { flight: new Types.ObjectId(String(flightId)) } : {}),
+    });
+  }
+
   async hold(dto: BookingRequestDto, userId: string) {
     const summary = await this.summarize(dto);
     await this.takeSeatsForAll(summary.segments, summary.seats);
@@ -388,6 +400,17 @@ export class FlightBookingsService {
     for (const passenger of booking.passengers) {
       const bags = passenger.extraBags ? `, ${passenger.extraBags} extra bag(s)` : '';
       doc.text(`${passenger.fullName} (${passenger.type}), passport ${passenger.passportNumber}${bags}`);
+    }
+
+    const claims = await this.seatClaimModel.find({ booking: booking._id }).lean();
+    if (claims.length) {
+      doc.moveDown().fontSize(14).text('Seats').fontSize(12);
+      for (const segment of booking.segments) {
+        const flight = segment.flight as any;
+        for (const c of claims.filter((x) => x.flight.toString() === flight._id.toString())) {
+          doc.text(`${flight.flightNumber}: ${booking.passengers[c.passengerIndex]?.fullName ?? 'Passenger'} - seat ${c.seatNumber}`);
+        }
+      }
     }
 
     doc.moveDown().text(`Total paid: ${booking.totalPrice} ${booking.currency}`);
@@ -978,6 +1001,139 @@ export class FlightBookingsService {
         );
       }
     }
+  }
+
+    // ---------------- FLT-28: seat selection ----------------
+  async selectSeats(bookingId: string, userId: string, dto: SelectSeatsDto) {
+    const booking = await this.loadOwn(bookingId, userId);
+    const now = new Date();
+
+    const holdValid =
+      booking.status === BookingStatus.PENDING_PAYMENT && !!booking.holdExpiresAt && booking.holdExpiresAt > now;
+    if (!holdValid && booking.status !== BookingStatus.CONFIRMED) {
+      throw new ConflictException(`Seats cannot be chosen on a ${booking.status} booking`);
+    }
+    if (booking.pendingChange) {
+      throw new ConflictException('Seats cannot be chosen while a flight change is pending');
+    }
+
+    const segment = booking.segments.find((s) => s.flight.toString() === dto.flightId);
+    if (!segment) throw new BadRequestException('That flight is not part of this booking');
+
+    const flight = await this.flightModel.findById(dto.flightId).select('flightNumber status departureTimeUtc cabins');
+    if (!flight) throw new NotFoundException('Flight not found');
+    if (flight.status !== FlightStatus.SCHEDULED || flight.departureTimeUtc <= now) {
+      throw new ConflictException(`Seats cannot be chosen on flight ${flight.flightNumber} any more`);
+    }
+    const cabin = flight.cabins.find((c) => c.cabinClass === segment.cabinClass);
+    if (!cabin) throw new NotFoundException(`Flight ${flight.flightNumber} has no ${segment.cabinClass} cabin`);
+
+    const assignments = dto.assignments.map((a) => ({ ...a, seatNumber: normalizeSeat(a.seatNumber) }));
+    const passengersSeen = new Set<number>();
+    const seatsSeen = new Set<string>();
+    for (const a of assignments) {
+      const passenger = booking.passengers[a.passengerIndex];
+      if (!passenger) throw new BadRequestException(`There is no passenger number ${a.passengerIndex}`);
+      if (passenger.type === PassengerType.INFANT) {
+        throw new BadRequestException(`${passenger.fullName} is an infant and does not get a seat`);
+      }
+      if (!isValidSeat(segment.cabinClass, cabin.totalSeats, a.seatNumber)) {
+        throw new BadRequestException(`Seat ${a.seatNumber} does not exist in the ${segment.cabinClass} cabin`);
+      }
+      if (passengersSeen.has(a.passengerIndex)) {
+        throw new BadRequestException(`Passenger ${a.passengerIndex} appears twice`);
+      }
+      if (seatsSeen.has(a.seatNumber)) {
+        throw new BadRequestException(`Seat ${a.seatNumber} was chosen for two passengers`);
+      }
+      passengersSeen.add(a.passengerIndex);
+      seatsSeen.add(a.seatNumber);
+    }
+
+    const bookingObjectId = booking._id as Types.ObjectId;
+    const flightObjectId = new Types.ObjectId(dto.flightId);
+    const previous: { passengerIndex: number; seatNumber: string | null }[] = [];
+    let attempting = '';
+
+    try {
+      for (const a of assignments) {
+        attempting = a.seatNumber;
+        // ONE atomic update per passenger: the unique index rejects a seat that is already taken
+        // and leaves the passenger's old seat untouched.
+        const before = await this.seatClaimModel.findOneAndUpdate(
+          { booking: bookingObjectId, flight: flightObjectId, passengerIndex: a.passengerIndex },
+          { $set: { seatNumber: a.seatNumber, cabinClass: segment.cabinClass } },
+          { upsert: true, returnDocument: 'before' },
+        );
+        previous.push({ passengerIndex: a.passengerIndex, seatNumber: before?.seatNumber ?? null });
+      }
+    } catch (err: any) {
+      await this.restoreSeats(bookingObjectId, flightObjectId, previous, segment.cabinClass);
+      if (err?.code === 11000) {
+        throw new ConflictException(`Seat ${attempting} was just taken. Please pick another seat.`);
+      }
+      throw err;
+    }
+
+    // the booking may have been cancelled or expired while we were claiming
+    const fresh = await this.bookingModel.findById(bookingObjectId).select('status').lean();
+    if (!fresh || ![BookingStatus.PENDING_PAYMENT, BookingStatus.CONFIRMED].includes(fresh.status)) {
+      await this.releaseSeats(bookingObjectId, flightObjectId);
+      throw new ConflictException('The booking is no longer active, so no seats were assigned');
+    }
+
+    const claims = await this.seatClaimModel
+      .find({ booking: bookingObjectId, flight: flightObjectId })
+      .sort({ passengerIndex: 1 })
+      .lean();
+    return {
+      bookingId: booking.id,
+      flightId: dto.flightId,
+      flightNumber: flight.flightNumber,
+      cabinClass: segment.cabinClass,
+      seats: claims.map((c) => ({
+        passengerIndex: c.passengerIndex,
+        passengerName: booking.passengers[c.passengerIndex]?.fullName ?? null,
+        seatNumber: c.seatNumber,
+      })),
+    };
+  }
+
+  /** Puts the passengers' previous seats back when a multi-seat request fails half way. */
+  private async restoreSeats(
+    bookingId: Types.ObjectId,
+    flightId: Types.ObjectId,
+    previous: { passengerIndex: number; seatNumber: string | null }[],
+    cabinClass: CabinClass,
+  ) {
+    for (const p of previous) {
+      const filter = { booking: bookingId, flight: flightId, passengerIndex: p.passengerIndex };
+      try {
+        if (p.seatNumber) {
+          await this.seatClaimModel.updateOne(filter, { $set: { seatNumber: p.seatNumber, cabinClass } });
+        } else {
+          await this.seatClaimModel.deleteOne(filter);
+        }
+      } catch (err) {
+        this.logger.error(`Could not restore seat of passenger ${p.passengerIndex} on booking ${bookingId}`, err as Error);
+      }
+    }
+  }
+
+  /** FLT-28: the seats of one of my bookings. */
+  async getSeats(bookingId: string, user: CurrentUserLike) {
+    const booking = await this.findOne(bookingId, user); // 404 if missing or not mine
+    const claims = await this.seatClaimModel.find({ booking: booking._id }).sort({ flight: 1, passengerIndex: 1 }).lean();
+    return {
+      bookingId: booking.id,
+      assignments: claims.map((c) => ({
+        flightId: c.flight.toString(),
+        cabinClass: c.cabinClass,
+        passengerIndex: c.passengerIndex,
+        passengerName: booking.passengers[c.passengerIndex]?.fullName ?? null,
+        seatNumber: c.seatNumber,
+      })),
+    };
   }
 
   async getFlightChangePayable(
