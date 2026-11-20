@@ -893,3 +893,17 @@ How the output was used: Used the generated checklist to manually test
 existing authentication functionality and verify fixes, while
 identifying flows that still require implementation or testing.
 ================================================
+
+==================================================
+Date: 2026-11-20
+Member: Philopateer George Refaat
+Branch: feature/HTL-26-review-reply
+Requirements: HTL-26 (optional bonus)
+Tool: Claude
+What I asked:
+- Implement a hotel moderator reply to a review (POST /api/reviews/:id/reply): one reply per review, replaced when posted again, shown inside the reviews list, with an in-app notification to the reviewer.
+What the AI produced:
+- ReplyReviewDto, the reply sub-document on the Review schema, ReviewsService.reply() (moderator of the review's hotel only, hidden reviews rejected, notification on the first reply), the controller route and the REVIEW_REPLIED notification type.
+What I did myself:
+- Reviewed the code against the project requirements and the repo, created a hotel moderator and tested the reply, the replacement, validation and role checks in Swagger, built, committed. The test review was inserted directly in the database because no hotel stay could be Completed today.
+==================================================
