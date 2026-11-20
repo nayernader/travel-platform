@@ -112,6 +112,7 @@ export class ItinerarySharingService {
     delete view.user; // never expose the owner's internal id or any private field
     delete view.hidden;
     delete view.originalAuthor;
+    delete view.attachedBookings; // ITN-27: attached bookings are private
 
     let credited: { _id: string; name: string } | null = null;
     if (it.originalAuthor) {
