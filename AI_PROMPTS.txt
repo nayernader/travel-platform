@@ -783,3 +783,113 @@ What the AI produced:
 - AttachBookingDto, ItineraryBookingsService (ownership check, CONFIRMED-only rule, atomic attach and detach), ItineraryBookingsController, the attachedBookings field on the Itinerary schema, and removing attachedBookings from the public itinerary view.
 What I did myself:
 - Reviewed the code against the project requirements and the repo, ran a real Stripe test-mode payment to get a confirmed flight booking, tested attach, duplicate (409), invalid body (400), detach and the public view in Swagger, merged the latest develop and resolved the conflict in itineraries.module.ts with the ITN-28 PDF code, built, committed.
+
+================================================ 
+Date: 2026-11-19
+Student: Ahmed Hossam 
+Tool: ChatGPT 
+Related Requirement: Authentication
+/ Email Verification (optional bonus) Nature of AI contribution: Bug
+fixing and troubleshooting Prompt: I cannot see the email sent after
+registering. Help me identify why the verification email is not arriving
+and review the registration and email-sending implementation.
+
+How the output was used: Used the troubleshooting guidance to
+investigate and fix issues in the registration flow, SMTP configuration,
+verification-email service, and verification link. Email delivery still
+needs to be confirmed by testing with a real inbox.
+================================================
+
+================================================ 
+Date: 2026-11-20
+Student: Ahmed Hossam 
+Tool: ChatGPT 
+Related Requirement: Authentication
+/ Email Verification (optional bonus) Nature of AI contribution: Code
+review and corrections Prompt: Review the NestJS email-verification
+implementation, including the verification DTO, controller endpoint,
+token validation, and email verification flow.
+
+How the output was used: Used the review to identify and correct issues
+in the token-based verification endpoint and the flow in which the email
+link opens a page before the user explicitly submits the verification
+request. ================================================
+
+================================================ 
+Date: 2026-11-20
+Student: Ahmed Hossam 
+Tool: ChatGPT 
+Related Requirement: Authentication
+/ Password Recovery (optional bonus) Nature of AI contribution: Code
+review and bug fixing Prompt: Review the password-reset implementation,
+including the reset token, expiry, resend cooldown, and reset page.
+
+How the output was used: Used the guidance to review and correct the
+password-reset flow, including token validation, expiration, replacement
+of older tokens, and single-use token consumption.
+================================================
+
+================================================ 
+Date: 2026-11-20
+Student: Ahmed Hossam 
+Tool: ChatGPT 
+Related Requirement: ACC-05 —
+Account Lockout Nature of AI contribution: Debugging and verification of
+an existing implementation Prompt: Review my AuthService login
+implementation and verify whether it correctly locks an account after
+repeated failed login attempts, rejects login during the lock period,
+and resets the failed-attempt counter after a successful login.
+
+How the output was used: Used the review to check the existing login
+implementation and verify its configuration against auth.constants.ts:
+five failed attempts and a fifteen-minute lock duration.
+================================================
+
+================================================ 
+Date: 2026-11-20
+Student: Ahmed Hossam 
+Tool: ChatGPT 
+Related Requirement: ACC-06 —
+Inactivity Timeout Nature of AI contribution: Code review and
+troubleshooting Prompt: Review the authentication session and
+refresh-token implementation, including the inactivity timeout and
+cookie handling.
+
+How the output was used: Used the guidance to inspect and correct
+session-related implementation details, including inactivity expiration,
+refresh-token validation, and cookie security attributes.
+================================================
+
+================================================ 
+Date: 2026-11-20
+Student: Ahmed Hossam
+Tool: ChatGPT 
+Related Requirement: Guest Access /
+Protected Actions Nature of AI contribution: Requirement-gap analysis
+and implementation planning Prompt: Check whether the implementation
+satisfies the requirement that guests who attempt to book, review, or
+create a post are redirected to login and returned to the original
+action after logging in. The current development URL is localhost, and
+the email pages are served by the NestJS backend.
+
+How the output was used: Used the review to identify a missing frontend
+behavior: backend API authorization alone does not implement the browser
+redirect-and-return flow. The frontend login redirect and
+return-to-action behavior remains to be implemented.
+================================================
+
+================================================ 
+Date: 2026-11-20
+Student: Ahmed Hossam 
+Tool: ChatGPT
+ Related Requirement: Authentication
+Testing Nature of AI contribution: Test planning for bug fixes and
+existing functionality Prompt: List the tests I should perform for
+registration, email verification, login, account lockout, access and
+refresh tokens, inactivity timeout, password recovery, booking
+restrictions, guest redirects, and email notifications.
+
+How the output was used: Used the generated checklist to manually test
+existing authentication functionality and verify fixes, while
+identifying flows that still require implementation or testing.
+================================================
