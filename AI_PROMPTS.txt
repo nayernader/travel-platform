@@ -784,6 +784,31 @@ What the AI produced:
 What I did myself:
 - Reviewed the code against the project requirements and the repo, ran a real Stripe test-mode payment to get a confirmed flight booking, tested attach, duplicate (409), invalid body (400), detach and the public view in Swagger, merged the latest develop and resolved the conflict in itineraries.module.ts with the ITN-28 PDF code, built, committed.
 
+==================================================
+Date: 2026-11-20
+Member: Member 1 (Team leader)
+Branch: feature/GEN-13-final-hardening
+Requirements: GEN-13 (backend enforcement of validation, rules and authorisation; salted password hashes)
+Tool: Claude (AI assistant)
+
+What I asked:
+- How to check that all 8 members' merged code enforces login, roles, ownership and
+  validation on the backend, and to update the README for submission.
+
+What the AI produced:
+- backend/scripts/audit-routes.mjs: lists all 141 routes and flags the 32 without @Auth.
+- Search commands for admin locks, Stripe webhook signature, public itinerary/post filters,
+  populate() leaks and secrets in code.
+- The updated README: status, setup, environment variable names, test accounts,
+  security summary and endpoints by module.
+
+What I did myself:
+- Pulled the merged develop, ran the build and the 19 tests, checked that my auth features
+  survived the email PR, reviewed every public route (all intended: login flows, searches,
+  public reads, reference data, Stripe webhook), and confirmed admin routes use
+  @Auth(Role.ADMIN), the webhook uses constructEvent, and public content is filtered.
+
+No secrets (connection string, JWT secrets, passwords, API keys) were shared with the AI.
 ================================================ 
 Date: 2026-11-19
 Student: Ahmed Hossam 
@@ -894,7 +919,6 @@ existing authentication functionality and verify fixes, while
 identifying flows that still require implementation or testing.
 ================================================
 
-==================================================
 Date: 2026-11-20
 Member: Philopateer George Refaat
 Branch: feature/HTL-26-review-reply
@@ -906,4 +930,3 @@ What the AI produced:
 - ReplyReviewDto, the reply sub-document on the Review schema, ReviewsService.reply() (moderator of the review's hotel only, hidden reviews rejected, notification on the first reply), the controller route and the REVIEW_REPLIED notification type.
 What I did myself:
 - Reviewed the code against the project requirements and the repo, created a hotel moderator and tested the reply, the replacement, validation and role checks in Swagger, built, committed. The test review was inserted directly in the database because no hotel stay could be Completed today.
-==================================================
