@@ -28,6 +28,8 @@ import { FlightBooking, FlightBookingSchema } from '../flight-bookings/schemas/f
 import { HotelBooking, HotelBookingSchema } from '../hotel-bookings/schemas/hotel-booking.schema';
 import { ItineraryBookingsService } from './itinerary-bookings.service';
 import { ItineraryBookingsController } from './itinerary-bookings.controller';
+import { ItineraryPdfService } from './itinerary-pdf.service';
+import { ItineraryPdfController } from './itinerary-pdf.controller';
 
 @Module({
   imports: [
@@ -55,6 +57,7 @@ import { ItineraryBookingsController } from './itinerary-bookings.controller';
     ItinerarySuggestionsController,
     ItineraryCloneController,
     ItineraryBookingsController,
+    ItineraryPdfController,
   ],
   providers: [
     ItinerariesService,
@@ -65,7 +68,9 @@ import { ItineraryBookingsController } from './itinerary-bookings.controller';
     ItineraryBudgetSummaryService,
     ItinerarySuggestionsService,
     ItineraryBookingsService,
+    ItineraryPdfService,
   ],
+
   exports: [
     ItinerariesService,
     ItineraryDaysService,

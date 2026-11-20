@@ -5,6 +5,7 @@ import { UserDocument } from '../users/schemas/user.schema';
 import { ExchangeRatesService } from '../exchange-rates/exchange-rates.service';
 import { SUPPORTED_CURRENCIES } from '../common/constants/currencies';
 import { PLATFORM_CURRENCY } from '../common/constants/platform-currency';
+import { ItineraryDocument } from './schemas/itinerary.schema';
 
 /** The four budget categories plus intercity transport (ITN-16), so every cost has a home. */
 const CATEGORIES = ['food', 'accommodation', 'transport', 'activities', 'intercityTransport'];
@@ -22,8 +23,12 @@ export class ItineraryBudgetSummaryService {
   ) {}
 
   /** ITN-14, ITN-18: totals by category, by day and by city group, in the user's preferred currency. */
-  async summary(user: UserDocument, id: string) {
-    const it = await this.its.getOwned(user, id);
+    async summary(user: UserDocument, id: string) {
+    return this.summaryFor(user, await this.its.getOwned(user, id));
+  }
+
+  /** Same totals for an itinerary the caller already loaded and access-checked (used by the ITN-28 export). */
+  async summaryFor(user: UserDocument, it: ItineraryDocument) {
     const view = toItineraryView(it);
 
     // ACC-09: show everything in the user's preferred currency

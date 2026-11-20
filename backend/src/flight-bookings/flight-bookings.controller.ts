@@ -9,6 +9,7 @@ import { Auth } from '../auth/decorators/auth.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Role } from '../common/enums/role.enum';
 import type { UserDocument } from '../users/schemas/user.schema';
+import { RequireVerifiedEmail } from '../auth/decorators/require-verified-email.decorator';
 
 @ApiTags('Flight Bookings')
 @Controller('flight-bookings')
@@ -33,6 +34,7 @@ export class FlightBookingsController {
   }
 
   @Auth(Role.USER)
+  @RequireVerifiedEmail()
   @Post('hold')
   @ApiOperation({
     summary: 'Hold the seats for 10 minutes and create a Pending Payment booking',
@@ -50,7 +52,6 @@ export class FlightBookingsController {
   }
 
   @Auth(Role.USER)
-    @Auth(Role.USER)
   @Get()
   @ApiOperation({
     summary: 'My flight bookings: upcoming, past or cancelled (10 per page)',
@@ -95,6 +96,7 @@ export class FlightBookingsController {
   cancel(@Param('id') id: string, @CurrentUser() user: UserDocument) {
     return this.bookings.cancel(id, user.id);
   }
+  @Auth(Role.USER)
   @Get(':id')
   @ApiOperation({
     summary: 'One of my flight bookings with its flights (confirmation page)',

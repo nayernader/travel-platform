@@ -29,6 +29,65 @@ export class UsersService {
   findByEmail(email: string) {
     return this.userModel.findOne({ email: email.toLowerCase().trim() });
   }
+  
+  /** ACC-02: loads the hidden verification fields too. */
+  findByEmailWithVerification(email: string) {
+    return this.userModel
+      .findOne({ email: email.toLowerCase().trim() })
+      .select('+emailVerificationCodeHash +emailVerificationExpiresAt +emailVerificationAttempts +emailVerificationSentAt');
+  }
+
+    /** ACC-07: loads the hidden reset fields too. */
+  findByEmailWithReset(email: string) {
+    return this.userModel
+      .findOne({ email: email.toLowerCase().trim() })
+      .select('+passwordResetCodeHash +passwordResetExpiresAt +passwordResetAttempts +passwordResetSentAt');
+  }
+
+  /**
+   * ACC-07: sets the new password in ONE atomic update, only if the code is still valid and the
+   * account is ACTIVE. Also revokes every refresh token, removes any lockout and wipes the code,
+   * so the same code can never be used twice.
+   */
+  completePasswordReset(id: string, codeHash: string, passwordHash: string) {
+    return this.userModel.findOneAndUpdate(
+      {
+        _id: id,
+        status: UserStatus.ACTIVE,
+        passwordResetCodeHash: codeHash,
+        passwordResetExpiresAt: { $gt: new Date() },
+      },
+      {
+        $set: {
+          passwordHash,
+          mustChangePassword: false,
+          failedLoginAttempts: 0,
+          passwordResetAttempts: 0,
+          emailVerified: true, // they received the code at this address
+        },
+        $unset: {
+          refreshTokenHash: 1,
+          lockUntil: 1,
+          passwordResetCodeHash: 1,
+          passwordResetExpiresAt: 1,
+          passwordResetSentAt: 1,
+        },
+      },
+      { returnDocument: 'after' },
+    );
+  }
+  
+  /** ACC-02: marks the account verified and wipes the code. */
+  markEmailVerified(id: string) {
+    return this.userModel.findOneAndUpdate(
+      { _id: id, emailVerified: false },
+      {
+        $set: { emailVerified: true, emailVerificationAttempts: 0 },
+        $unset: { emailVerificationCodeHash: 1, emailVerificationExpiresAt: 1, emailVerificationSentAt: 1 },
+      },
+      { returnDocument: 'after' },
+    );
+  }
 
   findById(id: string) {
     return this.userModel.findById(id);
@@ -101,6 +160,7 @@ export class UsersService {
       status: user.status,
       mustChangePassword: user.mustChangePassword,
       createdAt: (user as UserDocument & { createdAt?: Date }).createdAt,
+      emailVerified: user.emailVerified,
     };
   }
 }

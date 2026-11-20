@@ -13,7 +13,8 @@ import { ACCESS_COOKIE, INACTIVITY_LIMIT_MS } from '../../common/constants/auth.
 import { UserStatus } from '../../common/enums/user-status.enum';
 import type { UserDocument } from '../../users/schemas/user.schema';
 import { UsersService } from '../../users/users.service';
-import { ALLOW_TEMP_PASSWORD_KEY } from '../decorators/allow-temporary-password.decorator'; // NEW
+import { ALLOW_TEMP_PASSWORD_KEY } from '../decorators/allow-temporary-password.decorator';
+import { REQUIRE_VERIFIED_KEY } from '../decorators/require-verified-email.decorator';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
@@ -75,7 +76,20 @@ export class JwtAuthGuard implements CanActivate {
         });
       }
     }
-
+    
+    // ACC-02: some routes (booking, payment) need a verified email
+    const needsVerified = this.reflector.getAllAndOverride<boolean>(REQUIRE_VERIFIED_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (needsVerified && user.emailVerified === false) {
+      throw new ForbiddenException({
+        statusCode: 403,
+        error: 'Forbidden',
+        code: 'EMAIL_NOT_VERIFIED',
+        message: 'Please verify your email address first',
+      });
+    }
     req.user = user;
     return true;
   }
