@@ -1,4 +1,15 @@
-import { Body, Controller, Get, HttpCode, Patch, Post, Req, Res, UseGuards } from '@nestjs/common';
+
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Patch,
+  Post,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
@@ -9,12 +20,12 @@ import { AllowTemporaryPassword } from './decorators/allow-temporary-password.de
 import { Auth } from './decorators/auth.decorator';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ResendVerificationDto } from './dto/resend-verification.dto';
-import { VerifyEmailDto } from './dto/verify-email.dto';
-import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -25,67 +36,22 @@ export class AuthController {
   ) {}
 
   @Post('register')
-  @ApiOperation({ summary: 'Register a new traveler account', description: 'ACC-01' })
+  @ApiOperation({
+    summary: 'Register a new traveler account',
+    description: 'ACC-01. Sends an email verification link.',
+  })
   register(@Body() dto: RegisterDto) {
     return this.auth.register(dto);
   }
-  
+
   @Post('verify-email')
   @HttpCode(200)
   @ApiOperation({
-    summary: 'Verify my email with the 6-digit code',
-    description: 'ACC-02. Public. The code is valid for 15 minutes. After 5 wrong tries it must be requested again.',
+    summary: 'Verify email using the token from the email link',
+    description: 'ACC-02. Public. The token is valid for 15 minutes and can only be used once.',
   })
   @ApiResponse({ status: 200, description: 'Email verified' })
-  @ApiResponse({ status: 400, description: 'The code is wrong, expired or already used' })
-  verifyEmail(@Body() dto: VerifyEmailDto) {
-    return this.auth.verifyEmail(dto);
-  }
-
-  @Post('resend-verification')
-  @HttpCode(200)
-  @ApiOperation({
-    summary: 'Send a new 6-digit code',
-    description: 'ACC-02. Public. The old code stops working. One request per minute.',
-  })
-  @ApiResponse({ status: 200, description: 'A new code was sent if the account exists and is not verified' })
-  @ApiResponse({ status: 429, description: 'Too soon after the last email' })
-  resendVerification(@Body() dto: ResendVerificationDto) {
-    return this.auth.resendVerification(dto);
-  }
-
-  @Post('forgot-password')
-  @HttpCode(200)
-  @UseGuards(ThrottlerGuard)
-  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 requests per minute per IP
-  @ApiOperation({
-    summary: 'Ask for a password reset code by email',
-    description:
-      'ACC-07. Public. Always answers the same, whether or not the email exists. The code is valid for 30 minutes. Limited to 5 requests per minute per IP, and one email per minute per account.',
-  })
-  @ApiResponse({ status: 200, description: 'Generic answer: a code was sent if the account exists' })
-  @ApiResponse({ status: 400, description: 'Invalid email format' })
-  @ApiResponse({ status: 429, description: 'Too many requests from this IP' })
-  forgotPassword(@Body() dto: ForgotPasswordDto) {
-    return this.auth.forgotPassword(dto);
-  }
-
-  @Post('reset-password')
-  @HttpCode(200)
-  @ApiOperation({
-    summary: 'Set a new password with the code from the email',
-    description:
-      'ACC-07. Public. The code is single-use and valid for 30 minutes. After 5 wrong tries it must be requested again. All sessions are logged out.',
-  })
-  @ApiResponse({ status: 200, description: 'Password changed' })
-  @ApiResponse({ status: 400, description: 'The code is wrong, expired or already used, or the new password is too weak' })
-  resetPassword(@Body() dto: ResetPasswordDto) {
-    return this.auth.resetPassword(dto);
-  }
-
-  @Post('verify-email')
-  @HttpCode(200)
-  @ApiOperation({ summary: 'Verify email using a token', description: 'ACC-02. Public.' })
+  @ApiResponse({ status: 400, description: 'The link is invalid or expired' })
   verifyEmail(@Body() dto: VerifyEmailDto) {
     return this.auth.verifyEmail(dto);
   }
@@ -94,9 +60,9 @@ export class AuthController {
   @HttpCode(200)
   @ApiOperation({
     summary: 'Resend the email verification link',
-    description: 'ACC-02. Public. Sends a new verification link. The previous link becomes invalid. One request per minute.',
+    description: 'ACC-02. Public. The previous link becomes invalid. One request per minute.',
   })
-  @ApiResponse({ status: 200, description: 'A verification link was sent if the account exists and is not verified' })
+  @ApiResponse({ status: 200, description: 'Generic response' })
   @ApiResponse({ status: 429, description: 'Too soon after the last email' })
   resendVerification(@Body() dto: ResendVerificationDto) {
     return this.auth.resendVerification(dto);
@@ -108,10 +74,9 @@ export class AuthController {
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @ApiOperation({
     summary: 'Request a password reset link',
-    description: 'ACC-07. Public. Always returns the same response whether or not the email exists. The link expires after 30 minutes, is single-use, and is invalidated by a newer request.',
+    description: 'ACC-07. Public. Always returns the same response. The link expires after 30 minutes and is single-use.',
   })
-  @ApiResponse({ status: 200, description: 'Generic response: a reset link was sent if the account exists' })
-  @ApiResponse({ status: 400, description: 'Invalid email format' })
+  @ApiResponse({ status: 200, description: 'Generic response' })
   @ApiResponse({ status: 429, description: 'Too many requests from this IP' })
   forgotPassword(@Body() dto: ForgotPasswordDto) {
     return this.auth.forgotPassword(dto);
@@ -120,40 +85,61 @@ export class AuthController {
   @Post('reset-password')
   @HttpCode(200)
   @ApiOperation({
-    summary: 'Reset password using the email link',
-    description: 'ACC-07. Public. The reset token expires after 30 minutes and can only be used once.',
+    summary: 'Reset password using the email link token',
+    description: 'ACC-07. Public. The token expires after 30 minutes and can only be used once.',
   })
   @ApiResponse({ status: 200, description: 'Password changed' })
-  @ApiResponse({ status: 400, description: 'The link is invalid, expired or already used, or the new password is too weak' })
+  @ApiResponse({ status: 400, description: 'The link is invalid or expired' })
   resetPassword(@Body() dto: ResetPasswordDto) {
     return this.auth.resetPassword(dto);
   }
 
   @Post('login')
   @HttpCode(200)
-  @ApiOperation({ summary: 'Log in (sets httpOnly cookies)', description: 'ACC-04, ACC-05, ACC-19' })
-  login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
+  @ApiOperation({
+    summary: 'Log in (sets httpOnly cookies)',
+    description: 'ACC-04, ACC-05, ACC-19',
+  })
+  login(
+    @Body() dto: LoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     return this.auth.login(dto, res);
   }
 
   @Post('refresh')
   @HttpCode(200)
-  @ApiOperation({ summary: 'Get a new access token from the refresh cookie', description: 'ACC-06' })
-  refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+  @ApiOperation({
+    summary: 'Get a new access token from the refresh cookie',
+    description: 'ACC-06',
+  })
+  refresh(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     return this.auth.refresh(req, res);
   }
 
   @Post('logout')
   @HttpCode(200)
-  @ApiOperation({ summary: 'Log out and revoke the refresh token', description: 'ACC-06' })
-  logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+  @ApiOperation({
+    summary: 'Log out and revoke the refresh token',
+    description: 'ACC-06',
+  })
+  logout(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     return this.auth.logout(req, res);
   }
 
   @Get('me')
   @Auth()
   @AllowTemporaryPassword()
-  @ApiOperation({ summary: 'Current logged-in user', description: 'ACC-04, ACC-11, ACC-19' })
+  @ApiOperation({
+    summary: 'Current logged-in user',
+    description: 'ACC-04, ACC-11, ACC-19',
+  })
   me(@CurrentUser() user: UserDocument) {
     return this.users.toResponse(user);
   }
@@ -161,7 +147,10 @@ export class AuthController {
   @Patch('change-password')
   @Auth()
   @AllowTemporaryPassword()
-  @ApiOperation({ summary: 'Change my password with the current one', description: 'ACC-08, ACC-07a, ACC-13' })
+  @ApiOperation({
+    summary: 'Change my password with the current one',
+    description: 'ACC-08, ACC-07a, ACC-13',
+  })
   changePassword(
     @CurrentUser() user: UserDocument,
     @Body() dto: ChangePasswordDto,
@@ -205,23 +194,15 @@ export class AuthController {
             border-radius: 6px;
             font-size: 15px;
           }
-          input {
-            border: 1px solid #ddd;
-          }
+          input { border: 1px solid #ddd; }
           button {
             background: #2563eb;
             color: white;
             border: none;
             cursor: pointer;
           }
-          button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-          }
-          #message {
-            margin-top: 20px;
-            overflow-wrap: anywhere;
-          }
+          button:disabled { opacity: 0.6; cursor: not-allowed; }
+          #message { margin-top: 20px; overflow-wrap: anywhere; }
         </style>
       </head>
       <body>
@@ -281,9 +262,7 @@ export class AuthController {
             try {
               const response = await fetch('/api/auth/reset-password', {
                 method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, token, newPassword })
               });
 
@@ -301,7 +280,7 @@ export class AuthController {
               form.reset();
               form.style.display = 'none';
             } catch (error) {
-              message.textContent = error.message;
+              message.textContent = error.message || 'Password reset failed';
               button.disabled = false;
             }
           });
@@ -310,6 +289,7 @@ export class AuthController {
       </html>
     `);
   }
+
   @Get('verify-email-page')
   verifyEmailPage(@Res() res: Response) {
     return res.type('html').send(`
@@ -347,14 +327,8 @@ export class AuthController {
             cursor: pointer;
             font-size: 16px;
           }
-          button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-          }
-          #message {
-            margin-top: 20px;
-            overflow-wrap: anywhere;
-          }
+          button:disabled { opacity: 0.6; cursor: not-allowed; }
+          #message { margin-top: 20px; overflow-wrap: anywhere; }
         </style>
       </head>
       <body>
@@ -385,9 +359,7 @@ export class AuthController {
             try {
               const response = await fetch('/api/auth/verify-email', {
                 method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, token })
               });
 
@@ -404,7 +376,7 @@ export class AuthController {
               message.textContent = 'Your email has been verified successfully!';
               button.textContent = 'Verified';
             } catch (error) {
-              message.textContent = error.message;
+              message.textContent = error.message || 'Verification failed';
               button.disabled = false;
             }
           });

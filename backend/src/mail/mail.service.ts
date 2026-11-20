@@ -80,9 +80,13 @@ export class MailService {
   }
 
 
-  async sendPasswordResetLink(to: string, name: string, token: string): Promise<boolean> {
-    if (!this.transporter) return false;
 
+  async sendPasswordResetLink(
+    to: string,
+    name: string,
+    token: string,
+  ): Promise<boolean> {
+    if (!this.transporter) return false;
 
     const base = this.config.get<string>('FRONTEND_URL');
 
@@ -108,7 +112,7 @@ export class MailService {
           `If you did not request a password reset, ignore this email. Your password has not changed.\n`,
         html:
           `<p>Hello ${escapeHtml(name)},</p>` +
-          `<p><a href="${link}">Reset my password</a></p>` +
+          `<p><a href="${escapeHtml(link)}">Reset my password</a></p>` +
           `<p>This link expires after 30 minutes and can only be used once.</p>` +
           `<p>If you did not request a password reset, ignore this email. Your password has not changed.</p>`,
       });
@@ -119,6 +123,7 @@ export class MailService {
       return false;
     }
   }
+
 
   async sendNotificationEmail(to: string, name: string, subject: string, message: string): Promise<boolean> {
     if (!this.transporter) return false;
