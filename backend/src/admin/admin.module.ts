@@ -4,6 +4,8 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { UsersModule } from '../users/users.module';
 import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
+import { AdminAnalyticsController } from './admin-analytics.controller'; // BON-01
+import { AdminAnalyticsService } from './admin-analytics.service'; // BON-01
 import { AdminBookingsController } from './admin-bookings.controller';
 import { AdminBookingsService } from './admin-bookings.service';
 import { AdminAccountsController } from './admin-accounts.controller';
@@ -29,6 +31,7 @@ import { MailModule } from '../mail/mail.module';
     ReportsController,
     AdminProvidersController,
     AdminBookingsController,
+    AdminAnalyticsController, // BON-01
   ],
   providers: [
     AdminService,
@@ -36,6 +39,7 @@ import { MailModule } from '../mail/mail.module';
     ModerationService,
     AdminProvidersService,
     AdminBookingsService,
+    AdminAnalyticsService, // BON-01
   ],
 })
 export class AdminModule {}

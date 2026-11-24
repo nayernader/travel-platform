@@ -22,6 +22,7 @@ import { ItinerariesModule } from './itineraries/itineraries.module';
 import { BlogModule } from './blog/blog.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { ExchangeRatesModule } from './exchange-rates/exchange-rates.module';
+import { FavouritesModule } from './favourites/favourites.module'; // BON-02
 
 
 @Module({
@@ -72,6 +73,7 @@ import { ExchangeRatesModule } from './exchange-rates/exchange-rates.module';
 
     BlogModule,
     ExchangeRatesModule,
+    FavouritesModule, // BON-02
   ],
   controllers: [AppController],
   providers: [AppService],

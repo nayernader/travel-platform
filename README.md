@@ -6,7 +6,8 @@ Software Project I, Winter 2026. NestJS + MongoDB Atlas backend, Next.js fronten
 
 - All backend modules are merged into `develop`: accounts and auth, admin and moderation, airlines and flights, flight bookings, hotels and rooms, hotel bookings and reviews, payments and refunds, exchange rates, itineraries and budgets, blog, notifications and audit log.
 - Swagger UI: http://localhost:3001/api/docs (the backend is graded through Swagger UI)
-- 141 endpoints; every endpoint that changes data requires login, and roles and ownership are checked on the backend (see [Security](#security-gen-13)).
+- Bonus features: BON-01 admin analytics (bookings and revenue per provider) and BON-02 favourites (hotels and public itineraries).
+- 141 mandatory endpoints plus 4 bonus endpoints; every endpoint that changes data requires login, and roles and ownership are checked on the backend (see [Security](#security-gen-13)).
 - Unit tests: `npm test` (5 suites, 19 tests).
 
 ## Setup (backend)
@@ -205,6 +206,22 @@ All paths start with `/api`. Role "Logged in" means any logged-in account; "Publ
 | PATCH, DELETE | `/comments/:id` | Logged in (author) |
 | POST, DELETE | `/posts/:id/like` | Logged in |
 
+### Bonus: admin analytics (BON-01)
+| Method | Path | Role |
+|---|---|---|
+| GET | `/admin/analytics/bookings?from=&to=&type=&page=` | Admin |
+
+One row per airline and hotel for bookings made in the period: number of bookings, paid (Confirmed or Completed), cancelled, and revenue from paid bookings in the platform currency. Default period: the last 30 days.
+
+### Bonus: favourites (BON-02)
+| Method | Path | Role |
+|---|---|---|
+| POST | `/favourites` (`{ "type": "hotel" or "itinerary", "id": "..." }`) | User |
+| GET | `/favourites?type=&page=` | User (own list) |
+| DELETE | `/favourites/:type/:id` | User (own list) |
+
+Only active hotels and public, non-hidden itineraries can be saved; saving the same item twice returns 409 `ALREADY_FAVOURITE`. Items that are later deactivated or made private stay in the list with `"available": false` and no details.
+
 ### Reference data (GEN-12)
 | Method | Path | Role |
 |---|---|---|
@@ -288,6 +305,7 @@ await this.audit.log({ actorId: admin.id, action: AuditAction.USER_SUSPENDED, ta
 | Payments, refunds and exchange rates | `payments`, `exchange-rates` | PAY-01 to 04 |
 | Itineraries | `itineraries` | ITN |
 | Blog | `blog` | BLG |
+| Bonus: analytics and favourites | `admin`, `favourites` | BON-01, BON-02 |
 
 ## Troubleshooting
 
