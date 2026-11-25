@@ -35,7 +35,13 @@ The browser only ever sees `http://localhost:3000`, so the httpOnly login cookie
   <RequireAuth roles={["airline_moderator"]}> ... </RequireAuth>
   ```
   This is only for a nicer experience. The backend still checks login, roles and ownership (GEN-13).
-- **Types** for backend data go in `src/lib/types.ts` (one section per module).
+- **Types:** shared ones (`User`, `Page<T>`, `BookingStatus`, `BookingType`) are in `src/lib/types.ts`. Your module's types go in **your own file**: `src/lib/types-flights.ts`, `types-hotels.ts`, `types-payments.ts`, `types-itineraries.ts`, `types-blog.ts`, `types-admin.ts`. Copy the field names from Swagger.
+- **Loading a page's data:** `useApi` from `src/lib/use-api.ts` (loading, errors, reload, no lint problems):
+  ```ts
+  const { data, errors, loading, reload } = useApi<Page<Post>>("/posts", { tag, page });
+  ```
+- **Formatting:** `src/lib/format.ts`: `formatMoney`, `formatDate`, `formatDateTime`, `formatLocalTime` (airport time zone, GEN-06), `formatDuration`, `toDateInput`.
+- **Login links:** `loginUrl(returnTo)` from `src/lib/roles.ts` sends a guest to login and back (ACC-10). After login each role lands on its home page (`homeFor`, ACC-04).
 - **Lists are paginated by 10** (`Page<T>`: `items`, `total`, `page`). Every list page needs paging buttons.
 - **States:** every page shows loading, error and empty states, and asks for confirmation before destructive actions (cancel, delete).
 - **Images** from the backend are under `/uploads/...` and work as `<img src={url} />`.
@@ -82,15 +88,23 @@ and add sub-pages in the same folder (for example `src/app/flights/[id]/page.tsx
 
 | Route | Owner | Requirements |
 |---|---|---|
-| `/login`, `/register`, `/profile`, `/change-password` | Member 1 | ACC (done) |
-| `/favourites`, admin analytics inside `/admin` | Member 1 | BON-02, BON-01 |
-| `/dashboard/airline` | Member 2 | FLT-01 to FLT-10, FLT-30 |
-| `/flights`, flight part of `/bookings` | Member 3 | FLT-11 to FLT-29 |
-| `/dashboard/hotel` | Member 4 | HTL-01 to HTL-10 |
-| `/hotels`, hotel part of `/bookings`, reviews | Member 5 | HTL-11 to HTL-24 |
-| Checkout, payment and refund screens inside the booking flows | Member 6 | PAY-01 to PAY-04 |
-| `/itineraries`, `/explore` | Member 7 | ITN |
-| `/blog`, `/admin` | Member 8 | BLG, ACC-13 to ACC-17, GEN-09, GEN-10 |
+| `/login`, `/register`, `/profile`, `/change-password`, notifications bell | Member 1 | ACC, GEN-01 |
+| `/favourites`, `/admin/analytics`, `/admin/audit-logs` | Member 1 | BON-02, BON-01, GEN-07 |
+| `/dashboard/airline/*` | Member 2 | FLT-01 to FLT-09, FLT-29, FLT-30, GEN-06 |
+| `/flights`, `/flights/[id]`, `/flights/book`, `/bookings/flights/*` | Member 3 | FLT-11 to FLT-26, GEN-11 |
+| `/dashboard/hotel/*` | Member 4 | HTL-01, HTL-03 to HTL-10, HTL-22 |
+| `/hotels`, `/hotels/[id]`, `/hotels/book`, `/bookings/hotels/*` | Member 5 | HTL-02, HTL-11 to HTL-24 |
+| `/checkout/[type]/[id]`, payment and refund components | Member 6 | PAY-01 to PAY-04 |
+| `/itineraries/*`, `/explore/*` | Member 7 | ITN |
+| `/blog/*`, `/authors/[id]`, `/admin` and the other `/admin/*` pages | Member 8 | BLG, ACC-13 to ACC-17, GEN-09, GEN-10 |
+
+**Shared URLs (contracts between members):**
+- Home search: `/flights?from=CAI&to=DXB&date=2026-12-20&passengers=1` and `/hotels?city=cairo&checkIn=2026-12-20&checkOut=2026-12-23&guests=2`
+- After a hold (Pending Payment): Members 3 and 5 send the user to `/checkout/flight/<bookingId>` or `/checkout/hotel/<bookingId>` (Member 6)
+- After payment: Member 6 sends the user to `/bookings/flights/<bookingId>` or `/bookings/hotels/<bookingId>` (confirmation and details, Members 3 and 5)
+- `/bookings` has the Flights and Hotels tabs (`src/app/bookings/layout.tsx`); the admin sidebar is `src/app/admin/layout.tsx`
+
+**Pages with `[id]` in the URL:** the root layout wraps pages in `<Suspense>`, so `useParams()` and `useSearchParams()` work. If `npm run build` still says "outside of `<Suspense>`", wrap your component in `<Suspense fallback={<LoadingState />}>`.
 
 ## Folder layout
 
