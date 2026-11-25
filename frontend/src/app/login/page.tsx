@@ -8,11 +8,12 @@ import { AuthShell } from "@/components/auth-shell";
 import { Button, Input, LoadingState } from "@/components/ui";
 import { useAuth } from "@/context/auth-context";
 import { errorMessages } from "@/lib/api";
+import { homeFor, safeNext } from "@/lib/roles";
 
 function LoginForm() {
   const { login } = useAuth();
   const router = useRouter();
-  const next = useSearchParams().get("next") ?? "/";
+  const next = safeNext(useSearchParams().get("next"));
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<string[]>([]);
@@ -24,8 +25,8 @@ function LoginForm() {
     setBusy(true);
     try {
       const user = await login(email, password);
-      // Only go to local pages (never an outside URL from the query string)
-      router.push(user.mustChangePassword ? "/change-password" : next.startsWith("/") ? next : "/");
+      // ACC-10: back to the page that needed login; otherwise the role's home page (ACC-04)
+      router.push(user.mustChangePassword ? "/change-password" : next ?? homeFor(user.role));
     } catch (err) {
       setErrors(errorMessages(err)); // wrong password, locked (ACC-05), suspended...
     } finally {

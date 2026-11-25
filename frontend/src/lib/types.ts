@@ -13,6 +13,8 @@ export interface User {
   role: Role;
   status: UserStatus;
   mustChangePassword: boolean;
+  /** Moderators only: the id of their ONE airline or hotel */
+  providerId?: string;
   createdAt?: string;
 }
 
@@ -35,3 +37,12 @@ export interface ApiErrorBody {
 }
 
 export const SUPPORTED_CURRENCIES = ["EGP", "AED", "GBP", "USD", "EUR", "JPY", "SAR"] as const;
+
+/** GEN-11: the only statuses a flight booking or hotel reservation can have (values as the backend sends them). */
+export type BookingStatus = "PENDING_PAYMENT" | "CONFIRMED" | "COMPLETED" | "EXPIRED" | "CANCELLED";
+
+/** Used in shared URLs: /checkout/flight/:id, /checkout/hotel/:id */
+export type BookingType = "flight" | "hotel";
+
+// Module types go in their own file next to this one: src/lib/types-flights.ts, types-hotels.ts,
+// types-payments.ts, types-itineraries.ts, types-blog.ts, types-admin.ts (one owner each, no merge conflicts).

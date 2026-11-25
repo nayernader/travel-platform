@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Cormorant_Garamond, Geist, Geist_Mono } from "next/font/google";
 import { Footer } from "@/components/footer";
 import { MobileTabBar } from "@/components/mobile-tab-bar";
 import { Navbar } from "@/components/navbar";
+import { LoadingState } from "@/components/ui";
 import { AuthProvider } from "@/context/auth-context";
 import "./globals.css";
 
@@ -35,10 +37,18 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       {/* suppressHydrationWarning: browser extensions (e.g. Grammarly) add attributes to <body> */}
       <body className="min-h-full flex flex-col font-sans" suppressHydrationWarning>
         <AuthProvider>
-          <Navbar />
-          <main className="flex-1 pb-16 lg:pb-0">{children}</main>
+          {/* Suspense: pages with [id] in the URL only know the URL at runtime (cacheComponents), so
+              anything reading it (navbar, tab bar, useParams/useSearchParams in pages) streams in here. */}
+          <Suspense fallback={<div className="h-16" />}>
+            <Navbar />
+          </Suspense>
+          <main className="flex-1 pb-16 lg:pb-0">
+            <Suspense fallback={<LoadingState />}>{children}</Suspense>
+          </main>
           <Footer />
-          <MobileTabBar />
+          <Suspense fallback={null}>
+            <MobileTabBar />
+          </Suspense>
         </AuthProvider>
       </body>
     </html>
