@@ -4,6 +4,9 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useAuth } from "@/context/auth-context";
 import type { Role } from "@/lib/types";
+import { ButtonLink } from "./ui/button";
+import { Card } from "./ui/card";
+import { LoadingState } from "./ui/spinner";
 
 /**
  * Wrap a page that needs login (and optionally a role).
@@ -22,13 +25,16 @@ export function RequireAuth({ roles, children }: { roles?: Role[]; children: Rea
     else if (user.mustChangePassword && pathname !== "/change-password") router.replace("/change-password");
   }, [loading, user, pathname, router]);
 
-  if (loading || !user) return <p className="p-6 text-gray-500">Loading…</p>;
+  if (loading || !user) return <LoadingState />;
 
   if (roles && !roles.includes(user.role)) {
     return (
-      <div className="mx-auto max-w-xl p-6">
-        <h1 className="text-xl font-semibold">Not allowed</h1>
-        <p className="mt-2 text-gray-600">Your account does not have access to this page.</p>
+      <div className="mx-auto max-w-xl px-4 py-12">
+        <Card>
+          <h1 className="text-xl font-semibold">Not allowed</h1>
+          <p className="mt-2 text-slate-600">Your account does not have access to this page.</p>
+          <ButtonLink href="/" variant="outline" className="mt-4">Back to home</ButtonLink>
+        </Card>
       </div>
     );
   }

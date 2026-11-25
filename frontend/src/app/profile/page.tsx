@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { FormErrors } from "@/components/form-errors";
 import { RequireAuth } from "@/components/require-auth";
+import { Alert, Badge, Button, Card, Input, PageContainer, PageHeader, Select } from "@/components/ui";
 import { useAuth } from "@/context/auth-context";
 import { api, errorMessages } from "@/lib/api";
 import { SUPPORTED_CURRENCIES, type User } from "@/lib/types";
@@ -24,7 +26,7 @@ function ProfileForm({ user }: { user: User }) {
     setSaved(false);
     setBusy(true);
     try {
-      // ACC-09: only these three fields can change; empty phone is not sent
+      // ACC-09: only these three fields can change; an empty phone is not sent
       await api.patch<User>("/users/me", {
         name: form.name,
         ...(form.phone ? { phone: form.phone } : {}),
@@ -40,36 +42,28 @@ function ProfileForm({ user }: { user: User }) {
   }
 
   return (
-    <div className="mx-auto max-w-md p-6">
-      <h1 className="text-2xl font-bold">My profile</h1>
-      <p className="mt-1 text-sm text-gray-600">{user.email} · {user.role}</p>
-      <form onSubmit={onSubmit} className="mt-6 space-y-4">
-        <FormErrors messages={errors} />
-        {saved && <p className="rounded-md bg-green-50 p-3 text-sm text-green-700">Saved.</p>}
-        <label className="block">
-          <span className="text-sm font-medium">Name</span>
-          <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
-            className="mt-1 w-full rounded-md border px-3 py-2" />
-        </label>
-        <label className="block">
-          <span className="text-sm font-medium">Phone</span>
-          <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })}
-            className="mt-1 w-full rounded-md border px-3 py-2" placeholder="+201001234567" />
-        </label>
-        <label className="block">
-          <span className="text-sm font-medium">Preferred currency</span>
-          <select value={form.preferredCurrency} onChange={(e) => setForm({ ...form, preferredCurrency: e.target.value })}
-            className="mt-1 w-full rounded-md border px-3 py-2">
+    <PageContainer size="sm">
+      <PageHeader title="My profile" description={user.email} actions={<Badge tone="brand">{user.role}</Badge>} />
+      <Card>
+        <form onSubmit={onSubmit} className="space-y-4">
+          <FormErrors messages={errors} />
+          {saved && <Alert tone="success">Saved.</Alert>}
+          <Input label="Name" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          <Input label="Phone" value={form.phone} placeholder="+201001234567"
+            onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+          <Select label="Preferred currency" value={form.preferredCurrency}
+            onChange={(e) => setForm({ ...form, preferredCurrency: e.target.value })}>
             {SUPPORTED_CURRENCIES.map((c) => (
               <option key={c} value={c}>{c}</option>
             ))}
-          </select>
-        </label>
-        <button disabled={busy} className="rounded-md bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:opacity-60">
-          {busy ? "Saving…" : "Save"}
-        </button>
-      </form>
-    </div>
+          </Select>
+          <div className="flex items-center justify-between gap-3">
+            <Button type="submit" loading={busy}>Save</Button>
+            <Link href="/change-password" className="text-sm font-medium text-brand-700 hover:underline">Change password</Link>
+          </div>
+        </form>
+      </Card>
+    </PageContainer>
   );
 }
 

@@ -1,11 +1,15 @@
-/** Shows the backend's validation messages under a form. */
+import { Alert } from "./ui/alert";
+
+/** Shows the backend's validation messages above a form. */
 export function FormErrors({ messages }: { messages: string[] }) {
   if (!messages.length) return null;
   return (
-    <ul role="alert" className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-700">
-      {messages.map((m) => (
-        <li key={m}>{m}</li>
-      ))}
-    </ul>
+    <Alert tone="error">
+      <ul className={messages.length > 1 ? "list-disc pl-5" : ""}>
+        {messages.map((m) => (
+          <li key={m}>{m}</li>
+        ))}
+      </ul>
+    </Alert>
   );
 }

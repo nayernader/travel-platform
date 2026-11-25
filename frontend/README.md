@@ -40,6 +40,58 @@ The browser only ever sees `http://localhost:3000`, so the httpOnly login cookie
 - **States:** every page shows loading, error and empty states, and asks for confirmation before destructive actions (cancel, delete).
 - **Images** from the backend are under `/uploads/...` and work as `<img src={url} />`.
 
+## UI kit (use it, do not restyle by hand)
+
+Everything is in `src/components/ui` and imported from one place:
+
+```tsx
+import { Button, ButtonLink, Card, Input, Select, Textarea, Checkbox, Alert, Badge, StatusBadge,
+  LoadingState, EmptyState, ConfirmDialog, Pagination, PageContainer, PageHeader } from "@/components/ui";
+```
+
+| Need | Use |
+|---|---|
+| A page | `<PageContainer><PageHeader title="My bookings" actions={...} />...</PageContainer>` |
+| Buttons | `<Button loading={busy}>Save</Button>`, `variant="secondary" / "outline" / "danger" / "ghost"`, `<ButtonLink href="/x">` |
+| Form fields | `<Input label="Email" error={...} hint={...} />`, `<Select>`, `<Textarea>`, `<Checkbox label=... />` |
+| Backend errors | `<FormErrors messages={errorMessages(err)} />` |
+| Loading / empty | `<LoadingState />`, `<EmptyState title="No bookings yet" action={...} />` |
+| Destructive action | `<ConfirmDialog open title="Cancel this booking?" danger onConfirm onCancel />` |
+| Booking status | `<StatusBadge status={booking.status} />` (Pending payment, Confirmed, Completed, Expired, Cancelled) |
+| Lists of 10 | `<Pagination page={data.page} total={data.total} onPageChange={setPage} />` |
+| Moderator / admin pages | `<DashboardShell title="Airline dashboard" items={[...]}>` from `@/components/dashboard-shell` |
+
+| 3D hover card | `<TiltCard className="h-64 ...">` (tilts toward the mouse, off for "reduce motion") |
+| Login-style page | `<AuthShell title="...">` from `@/components/auth-shell` |
+
+The home page is an editorial, full-screen photo layout (warm cream, forest and brass colors, serif headings) (photos go in `public/images`, see `public/images/README.md`; missing photos show a gradient). Home-page helpers you can reuse: `<Photo>` (cover photo with fallback), `<Reveal>` (fade in on scroll). On phones there is an app-style bottom bar (`mobile-tab-bar.tsx`). The navbar floats over the photo on `/` only (`OVERLAY_PAGES` in `navbar.tsx`).
+
+It also has a 3D globe (`src/components/globe.tsx`, the `cobe` package) with our 8 destinations from `src/lib/destinations.ts`.
+
+**Search links from the home page** (the results pages must read these query parameters):
+- `/flights?from=CAI&to=DXB&date=2026-12-20&passengers=1` (Member 3)
+- `/hotels?city=cairo&checkIn=2026-12-20&checkOut=2026-12-23&guests=2` (Member 5)
+
+Colors: `brand` (forest green), `accent` (brass), `night-900` (ink), `cream` and `sand`, for example `bg-brand-600`, `text-accent-600`, `bg-cream`. They are defined once in `src/app/globals.css`. Headings (h1 to h3) use the serif display font automatically; use `<em className="italic">` inside a heading for the elegant italic accent.
+The app is light-only on purpose (readable on every computer, whatever the system theme).
+
+## Pages and owners (Milestone 2)
+
+Each route below exists as a placeholder (`ComingSoon`) that shows its owner. Replace the placeholder with your real page,
+and add sub-pages in the same folder (for example `src/app/flights/[id]/page.tsx`). Add your link to `LINKS` in `src/components/navbar.tsx` only if it is new.
+
+| Route | Owner | Requirements |
+|---|---|---|
+| `/login`, `/register`, `/profile`, `/change-password` | Member 1 | ACC (done) |
+| `/favourites`, admin analytics inside `/admin` | Member 1 | BON-02, BON-01 |
+| `/dashboard/airline` | Member 2 | FLT-01 to FLT-10, FLT-30 |
+| `/flights`, flight part of `/bookings` | Member 3 | FLT-11 to FLT-29 |
+| `/dashboard/hotel` | Member 4 | HTL-01 to HTL-10 |
+| `/hotels`, hotel part of `/bookings`, reviews | Member 5 | HTL-11 to HTL-24 |
+| Checkout, payment and refund screens inside the booking flows | Member 6 | PAY-01 to PAY-04 |
+| `/itineraries`, `/explore` | Member 7 | ITN |
+| `/blog`, `/admin` | Member 8 | BLG, ACC-13 to ACC-17, GEN-09, GEN-10 |
+
 ## Folder layout
 
 ```
