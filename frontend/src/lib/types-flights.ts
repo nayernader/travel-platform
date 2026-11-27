@@ -194,6 +194,7 @@ export interface FlightBooking {
   cancelledBy?: "USER" | "AIRLINE";
   refundPercent?: number;
   cancelledAt?: string;
+  pendingChange?: PendingChange | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -241,4 +242,64 @@ export interface CancelResult {
   refundPercent: number;
   refundAmount: number;
   currency: string;
+}
+
+/* ---------- Change booking (FLT-27) ---------- */
+
+export interface PendingChange {
+  changeId: string;
+  segments: { flight: string; cabinClass: string; unitPrice: number }[];
+  totalPrice: number;
+  fareDifference: number;
+  status: "PENDING_PAYMENT" | "PENDING_REFUND";
+  expiresAt?: string;
+}
+
+export interface ChangeRequest {
+  segments: { flightId: string; cabinClass: string }[];
+}
+
+export interface ChangePreviewSegment {
+  flightId: string;
+  flightNumber: string;
+  departureAirport: string;
+  arrivalAirport: string;
+  departureTimeUtc: string;
+  cabinClass: string;
+  farePerSeat: number;
+  subtotal: number;
+}
+
+export interface ChangePreview {
+  bookingId: string;
+  reference?: string;
+  currentTotal: number;
+  newTotal: number;
+  fareDifference: number;
+  currency: string;
+  seats: number;
+  segments: ChangePreviewSegment[];
+  baggageFee: number;
+}
+
+export interface ChangeResult extends ChangePreview {
+  changeId: string;
+  /** COMPLETED: new flights already applied. PENDING_PAYMENT: fare difference must be paid before expiresAt. */
+  status: "COMPLETED" | "PENDING_PAYMENT";
+  expiresAt?: string;
+  paymentRequired: boolean;
+  refundDue: number;
+}
+
+/** Eligible for FLT-27: confirmed, no pending change, outbound not departed. */
+export function canChange(b: FlightBooking, now: number): boolean {
+  return b.status === "CONFIRMED" && !b.pendingChange && !hasDeparted(b, now);
+}
+
+/**
+ * ASSUMPTION, not verified: the backend payable for a change is kind FLIGHT_CHANGE (bookingId + changeId),
+ * but I have not seen Member 6's checkout route. Confirm with Member 6; this is the only place to edit.
+ */
+export function changePaymentHref(bookingId: string, changeId: string): string {
+  return `/checkout/flight/${bookingId}?changeId=${changeId}`;
 }
