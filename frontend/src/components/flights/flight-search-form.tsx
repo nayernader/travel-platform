@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button, Input, Select } from "@/components/ui";
-import { AirportSelect } from "@/components/reference/airport-select";
+import { AirportCombobox } from "@/components/flights/airport-combobox";
 import { CABINS, type FlightQuery } from "@/lib/types-flights";
 
 /** FLT-11, FLT-12, FLT-15 search form. Validates for comfort only (GEN-13). */
@@ -49,9 +49,9 @@ export function FlightSearchForm({
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <AirportSelect label="From" value={q.from} error={err.from} excludeCode={q.to}
+        <AirportCombobox label="From" value={q.from} error={err.from} excludeCode={q.to}
           onChange={(c) => set("from", c)} />
-        <AirportSelect label="To" value={q.to} error={err.to} excludeCode={q.from}
+        <AirportCombobox label="To" value={q.to} error={err.to} excludeCode={q.from}
           onChange={(c) => set("to", c)} />
         <Input label="Departure date" type="date" value={q.date} error={err.date}
           onChange={(e) => set("date", e.target.value)} />
