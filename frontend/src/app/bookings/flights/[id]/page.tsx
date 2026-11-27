@@ -9,6 +9,7 @@ import { useZoneOf } from "@/components/flights/use-zone-of";
 import { FormErrors } from "@/components/form-errors";
 import { Alert, ButtonLink, Card, CardTitle, EmptyState, LoadingState, StatusBadge } from "@/components/ui";
 import { buttonClasses } from "@/components/ui/button";
+import type { SeatsResponse } from "@/lib/types-flights";
 import { formatDateTime, formatLocalTime, formatMoney } from "@/lib/format";
 import { useApi } from "@/lib/use-api";
 import {
@@ -25,6 +26,7 @@ function DetailsContent() {
   const [changed, setChanged] = useState<ChangeResult | null>(null);
 
   const { data: b, errors, loading, reload } = useApi<FlightBooking>(`/flight-bookings/${bookingId}`);
+  const seatsData = useApi<SeatsResponse>(`/flight-bookings/${bookingId}/seats`);
 
   if (loading && !b) return <LoadingState label="Loading booking..." />;
   if (errors) return <FormErrors messages={errors} />;
@@ -37,6 +39,9 @@ function DetailsContent() {
   const pc = b.status === "CONFIRMED" ? b.pendingChange : null;
   const pcActive = !!pc && pc.status === "PENDING_PAYMENT" && (!pc.expiresAt || new Date(pc.expiresAt).getTime() > now);
   const canCancel = b.status === "CONFIRMED" && !b.pendingChange && !hasDeparted(b, now);
+
+  const canSeat =
+  (b.status === "PENDING_PAYMENT" && holdActive) || (b.status === "CONFIRMED" && !b.pendingChange && !hasDeparted(b, now));
 
   return (
     <div className="space-y-4">
@@ -125,6 +130,13 @@ function DetailsContent() {
                 Arrives {formatLocalTime(s.flight.arrivalTimeUtc, zoneOf(s.flight.arrivalAirport))}
               </p>
               <p className="text-slate-600">Cabin: {s.cabinClass}</p>
+              {seatsData.data?.assignments
+                .filter((a) => a.flightId === s.flight._id)
+                .map((a) => (
+                    <p key={a.passengerIndex} className="text-slate-600">
+                    Seat {a.seatNumber}: {a.passengerName ?? `Passenger ${a.passengerIndex + 1}`}
+                    </p>
+                ))}
             </div>
           ))}
         </div>
@@ -152,7 +164,7 @@ function DetailsContent() {
         </div>
       </Card>
 
-      {(canDownload || canChange(b, now)) && (
+      {(canDownload || canChange(b, now) || canSeat) && (
         <div className="flex flex-wrap items-center gap-3">
           {canDownload && (
             <a href={`/api/flight-bookings/${b._id}/e-ticket`} className={buttonClasses("primary", "md", "")}>
@@ -160,6 +172,11 @@ function DetailsContent() {
             </a>
           )}
           <ChangeBookingButton booking={b} now={now} />
+          {canSeat && (
+                <ButtonLink href={`/bookings/flights/${b._id}/seats`} variant="outline">
+                    {seatsData.data?.assignments.length ? "Change seats" : "Choose seats"}
+                </ButtonLink>
+                )}
         </div>
       )}
 

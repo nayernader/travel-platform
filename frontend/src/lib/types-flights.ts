@@ -296,10 +296,38 @@ export function canChange(b: FlightBooking, now: number): boolean {
   return b.status === "CONFIRMED" && !b.pendingChange && !hasDeparted(b, now);
 }
 
-/**
- * ASSUMPTION, not verified: the backend payable for a change is kind FLIGHT_CHANGE (bookingId + changeId),
- * but I have not seen Member 6's checkout route. Confirm with Member 6; this is the only place to edit.
- */
+
 export function changePaymentHref(bookingId: string, changeId: string): string {
   return `/checkout/flight/${bookingId}?changeId=${changeId}`;
+}
+
+/* ---------- Seat selection (FLT-28) ---------- */
+
+export interface SeatMapSeat {
+  seatNumber: string;
+  status: "AVAILABLE" | "TAKEN";
+}
+
+/** GET /flights/:id/seat-map?cabinClass= (flights.service.ts seatMap) */
+export interface SeatMapResponse {
+  flightId: string;
+  flightNumber: string;
+  cabinClass: string;
+  totalSeats: number;
+  takenSeats: number;
+  seats: SeatMapSeat[];
+}
+
+/** GET /flight-bookings/:id/seats (flight-bookings.service.ts getSeats) */
+export interface SeatAssignment {
+  flightId: string;
+  cabinClass: string;
+  passengerIndex: number;
+  passengerName: string | null;
+  seatNumber: string;
+}
+
+export interface SeatsResponse {
+  bookingId: string;
+  assignments: SeatAssignment[];
 }

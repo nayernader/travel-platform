@@ -10,6 +10,7 @@ import type { BookingRequest, BookingSummary as Summary, FlightDetails, HoldResp
 import { FormErrors } from "@/components/form-errors";
 import { RequireAuth } from "@/components/require-auth";
 import { BookingSummary } from "@/components/flights/booking-summary";
+import { SeatStep } from "@/components/flights/seat-step";
 import {
   PassengerFields,
   emptyPassenger,
@@ -28,7 +29,6 @@ function intParam(sp: URLSearchParams, key: string, fallback: number): number {
 
 function BookContent() {
   const sp = useSearchParams();
-  const router = useRouter();
 
   const flightId = sp.get("flight");
   const cabin = sp.get("cabin");
@@ -53,7 +53,8 @@ function BookContent() {
   const [backendErrors, setBackendErrors] = useState<string[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [busy, setBusy] = useState(false);
-
+  const [heldId, setHeldId] = useState<string | null>(null);
+  
   const roundTrip = Boolean(returnId);
   const invalidLink =
     !flightId ||
@@ -63,6 +64,20 @@ function BookContent() {
     infants > adults ||
     adults + children > 9 ||
     adults + children + infants > 9;
+
+  if (heldId) {
+    return (
+        <PageContainer size="md">
+        <PageHeader title="Choose your seats" description="Optional. Your booking is held while you choose." />
+        <SeatStep
+            bookingId={heldId}
+            continueHref={`/checkout/flight/${heldId}`}
+            continueLabel="Continue to payment"
+            skipLabel="Skip to payment"
+        />
+        </PageContainer>
+    );
+}
 
   if (invalidLink) {
     return (
@@ -162,11 +177,12 @@ function BookContent() {
     setBackendErrors([]);
     setBusy(true);
     try {
-      const res = await api.post<HoldResponse>("/flight-bookings/hold", buildBody());
-      router.push(`/checkout/flight/${res.bookingId}`);
+        const res = await api.post<HoldResponse>("/flight-bookings/hold", buildBody());
+        setHeldId(res.bookingId); // next step: seats, then payment
     } catch (err) {
-      setBackendErrors(errorMessages(err));
-      setBusy(false);
+        setBackendErrors(errorMessages(err));
+    } finally {
+        setBusy(false);
     }
   }
 
