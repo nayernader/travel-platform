@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Put } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Put, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { AirlinesService } from './airlines.service';
@@ -15,6 +15,18 @@ import type { UserDocument } from '../users/schemas/user.schema';
 @Controller('airlines')
 export class AirlinesController {
   constructor(private readonly airlines: AirlinesService) {}
+
+
+    @Auth(Role.ADMIN, Role.AIRLINE_MODERATOR)
+  @Get(':id/flights')
+  @ApiOperation({ summary: "List my airline's flights, 10 per page (FLT-30)" })
+  listFlights(
+    @CurrentUser() user: UserDocument,
+    @Param('id') id: string,
+    @Query('page') page?: string,
+  ) {
+    return this.airlines.listFlights(user, id, Number(page) || 1);
+  }
 
   @Auth(Role.ADMIN)
   @Post()
