@@ -1117,3 +1117,82 @@ MongooseSchema.Types.ObjectId instead of Types.ObjectId, which broke the query
 filter types. Changed the property types in seat-claim.schema.ts and made
 releaseSeats convert ids with new Types.ObjectId(). Re-ran tsc to confirm the
 errors were gone.
+
+================================================
+Date: 2026-11-27
+Student: Ahmed Hossam
+Tool: Claude
+Related Requirement: FLT-11, FLT-12, FLT-15
+Prompt:
+Read the Milestone 2 plan and my Member 3 guide and list everything I must do.
+Then build the flight search page (search form, results, price filter,
+sort, round trip, passenger types) from SearchFlightsDto and AirportSelect.
+How the output was used:
+Used the task list as my plan. Used the generated search form, results page and
+URL-parameter handling, then adapted them to the real backend fields.
+================================================
+
+================================================
+Date: 2026-11-27
+Student: Ahmed Hossam
+Tool: Claude
+Related Requirement: FLT-11, FLT-15
+Prompt:
+Fix these TypeScript errors on the flights page, and match the types
+to my real flight.schema.ts, flight.view.ts and flights.service.ts.
+How the output was used:
+Added a type guard for the round-trip response and replaced guessed fields
+with the real ones (departureTimeUtc, fromPrice, durationMinutes, cabins).
+================================================
+
+================================================
+Date: 2026-11-30
+Student: Ahmed Hossam
+Tool: Claude
+Related Requirement: FLT-17
+Prompt:
+Build the flight details page using the findOneView response: cabins,
+seats left, baggage, cancellation policy and a Book button for guests.
+How the output was used:
+Used the structure of the details page and checked the cancellation tier
+wording against the backend before keeping it.
+================================================
+
+================================================
+Date: 2026-12-01
+Student: Ahmed Hossam
+Tool: Claude
+Related Requirement: FLT-11 to FLT-26
+Prompt:
+Write a full handoff prompt describing both PDFs, what is finished in
+branch 1 and what to do next, so another assistant can continue.
+How the output was used:
+Used it as the starting context for the next sessions (booking form,
+my bookings, cancellation).
+================================================
+
+================================================
+Date: 2026-12-03
+Student: Ahmed Hossam
+Tool: Claude
+Related Requirement: FLT-28
+Prompt:
+Add seat selection to the booking flow. I pasted the flights and
+flight-bookings controllers, the DTOs, seat-claim schema and seat-layout util.
+How the output was used:
+Used the seat map component, the per-passenger seat picker and the seats page,
+wired to GET seat-map, PATCH seat and GET seats.
+================================================
+
+================================================
+Date: 2026-12-03
+Student: Ahmed Hossam
+Tool: Claude
+Related Requirement: FLT-22, FLT-28
+Prompt:
+Make seat selection a step before payment, after the hold is created,
+in a clean way. Then fix the lint warning and the redirect to checkout.
+How the output was used:
+Added the SeatStep component and the inline seat step on the booking page,
+and removed the unused router variable.
+================================================
