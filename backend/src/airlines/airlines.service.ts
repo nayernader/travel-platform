@@ -5,19 +5,42 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { isValidObjectId, Model } from 'mongoose';
+import { isValidObjectId, Model, Types } from 'mongoose';
 
 import { Airline, AirlineDocument } from './schemas/airline.schema';
 import { CreateAirlineDto, UpdateAirlineDto } from './dto/create-airline.dto';
 import { BaggagePolicyDto } from './dto/baggage-policy.dto';
 import { CancellationPolicyDto } from './dto/cancellation-policy.dto';
+import { Flight, FlightDocument } from '../flights/schemas/flight.schema';
 
 import { Role } from '../common/enums/role.enum';
 import { UserDocument } from '../users/schemas/user.schema';
 
 @Injectable()
 export class AirlinesService {
-  constructor(@InjectModel(Airline.name) private model: Model<AirlineDocument>) {}
+  constructor(
+    @InjectModel(Airline.name) private model: Model<AirlineDocument>,
+    @InjectModel(Flight.name) private flightModel: Model<FlightDocument>,
+  ) {}
+
+  /** Moderator's own airline flights, newest departure first, 10 per page. */
+  async listFlights(user: UserDocument, airlineId: string, page = 1) {
+    if (!isValidObjectId(airlineId)) throw new BadRequestException('Invalid airline id');
+    this.assertCanManage(user, airlineId);
+    const size = 10;
+    const p = Math.max(1, Math.floor(page) || 1);
+    const filter: any = { airline: new Types.ObjectId(airlineId) };
+    const [items, total] = await Promise.all([
+      this.flightModel
+        .find(filter)
+        .sort({ departureTimeUtc: -1 })
+        .skip((p - 1) * size)
+        .limit(size)
+        .lean(),
+      this.flightModel.countDocuments(filter),
+    ]);
+    return { items, total, page: p, pages: Math.max(1, Math.ceil(total / size)) };
+  }
 
   create(dto: CreateAirlineDto) {
     return this.model.create(dto); // duplicate code -> 409 from the global filter
