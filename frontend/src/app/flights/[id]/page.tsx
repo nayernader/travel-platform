@@ -30,17 +30,6 @@ function intParam(sp: URLSearchParams, key: string, fallback: number): number {
   return Number.isInteger(n) && n >= 0 ? n : fallback;
 }
 
-/** Date in the airport's own time zone (GEN-06). */
-function dateIn(utc: string, timeZone: string): string {
-  return new Intl.DateTimeFormat("en-GB", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    timeZone,
-  }).format(new Date(utc));
-}
-
 function FlightSummary({ title, flight }: { title: string; flight: FlightDetails }) {
   return (
     <Card>
@@ -58,17 +47,13 @@ function FlightSummary({ title, flight }: { title: string; flight: FlightDetails
         <div>
           <p className="text-2xl font-semibold text-slate-900">{formatLocalTime(flight.departureTimeUtc, flight.departureTimeZone)}</p>
           <p className="text-sm text-slate-700">{flight.departureAirport}</p>
-          <p className="text-xs text-slate-500">
-            {dateIn(flight.departureTimeUtc, flight.departureTimeZone)} · {flight.departureTimeZone}
-          </p>
+          <p className="text-xs text-slate-500">Local time at {flight.departureAirport} · {flight.departureTimeZone}</p>
         </div>
         <div className="text-sm text-slate-500 sm:text-center">{formatDuration(flight.durationMinutes)}</div>
         <div className="sm:text-right">
           <p className="text-2xl font-semibold text-slate-900">{formatLocalTime(flight.arrivalTimeUtc, flight.arrivalTimeZone)}</p>
           <p className="text-sm text-slate-700">{flight.arrivalAirport}</p>
-          <p className="text-xs text-slate-500">
-            {dateIn(flight.arrivalTimeUtc, flight.arrivalTimeZone)} · {flight.arrivalTimeZone}
-          </p>
+          <p className="text-xs text-slate-500">Local time at {flight.arrivalAirport} · {flight.arrivalTimeZone}</p>
         </div>
       </div>
     </Card>

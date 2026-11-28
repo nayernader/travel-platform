@@ -109,3 +109,48 @@ export function toApiParams(q: FlightQuery) {
   if (q.max) p.maxPrice = Number(q.max);
   return p;
 }
+
+export type PassengerKind = "ADULT" | "CHILD" | "INFANT";
+
+export interface PassengerPayload {
+  fullName: string;
+  dateOfBirth: string;
+  passportNumber: string;
+  type: PassengerKind;
+  extraBags?: number;
+  extraBagWeightKg?: number;
+}
+
+export interface BookingRequest {
+  segments: { flightId: string; cabinClass: string }[];
+  passengers: PassengerPayload[];
+}
+
+export interface SummarySegment {
+  flightId: string;
+  flightNumber: string;
+  departureAirport: string;
+  arrivalAirport: string;
+  departureTimeUtc: string;
+  cabinClass: string;
+  farePerSeat: number;
+  subtotal: number;
+}
+
+export interface BookingSummary {
+  adults: number;
+  children: number;
+  infants: number;
+  seats: number;
+  passengers: { fullName: string; type: PassengerKind; extraBags: number; extraBagWeightKg: number }[];
+  segments: SummarySegment[];
+  baggageFee: number;
+  total: number;
+  currency: string;
+}
+
+export interface HoldResponse extends BookingSummary {
+  bookingId: string;
+  status: string;
+  holdExpiresAt: string;
+}
