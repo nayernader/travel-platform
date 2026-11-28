@@ -1,4 +1,4 @@
-import type { Page } from "@/lib/types";
+import type { BookingStatus, Page } from "@/lib/types";
 import type { Cabin, Tier } from "@/lib/types-airlines";
 
 /** One item of GET /flights/search (flights.service.ts searchOneWay + toFlightView) */
@@ -153,4 +153,92 @@ export interface HoldResponse extends BookingSummary {
   bookingId: string;
   status: string;
   holdExpiresAt: string;
+}
+
+/* ---------- My flight bookings (FLT-23 / 25 / 26) ---------- */
+
+export interface BookingFlight {
+  _id: string;
+  flightNumber: string;
+  departureAirport: string;
+  arrivalAirport: string;
+  departureTimeUtc: string;
+  arrivalTimeUtc: string;
+}
+
+export interface BookingSegment {
+  flight: BookingFlight;
+  cabinClass: string;
+  unitPrice: number;
+}
+
+export interface BookingPassenger {
+  fullName: string;
+  dateOfBirth: string;
+  passportNumber: string;
+  type: PassengerKind;
+  extraBags?: number;
+  extraBagWeightKg?: number;
+}
+
+export interface FlightBooking {
+  _id: string;
+  reference?: string;
+  segments: BookingSegment[];
+  passengers: BookingPassenger[];
+  seats: number;
+  totalPrice: number;
+  currency: string;
+  status: BookingStatus;
+  holdExpiresAt?: string;
+  cancelledBy?: "USER" | "AIRLINE";
+  refundPercent?: number;
+  cancelledAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BookingList {
+  group: string;
+  items: FlightBooking[];
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
+
+export type BookingGroup = "upcoming" | "past" | "cancelled";
+export const BOOKING_GROUPS: { value: BookingGroup; label: string }[] = [
+  { value: "upcoming", label: "Upcoming" },
+  { value: "past", label: "Past" },
+  { value: "cancelled", label: "Cancelled" },
+];
+
+export function parseGroup(v: string | null): BookingGroup {
+  return v === "past" || v === "cancelled" ? v : "upcoming";
+}
+
+/** segments[0] is the outbound flight */
+export function hasDeparted(b: FlightBooking, now: number): boolean {
+  const out = b.segments[0]?.flight.departureTimeUtc;
+  return !!out && new Date(out).getTime() <= now;
+}
+
+export interface RefundPreview {
+  bookingId: string;
+  reference?: string;
+  totalPrice: number;
+  currency: string;
+  daysRemaining: number;
+  refundPercent: number;
+  refundAmount: number;
+}
+
+export interface CancelResult {
+  bookingId: string;
+  reference?: string;
+  status: "CANCELLED";
+  refundPercent: number;
+  refundAmount: number;
+  currency: string;
 }
