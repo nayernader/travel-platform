@@ -7,6 +7,11 @@ const BACKEND_URL = process.env.BACKEND_URL ?? "http://localhost:3001";
 const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
+  experimental: {
+    // Our pages load their data in the browser (login check, useApi), so the dev-only
+    // "instant navigation" check would warn on every page. Only check pages that opt in.
+    instantInsights: { validationLevel: "manual-warning" },
+  },
   turbopack: {
     rules: {
       "*.css": {

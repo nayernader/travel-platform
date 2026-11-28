@@ -244,12 +244,18 @@ function GuestGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function KeyedBook() {
+  const sp = useSearchParams();
+  // new query (flight, cabin, passenger counts) = fresh form state
+  return <BookContent key={sp.toString()} />;
+}
+
 export default function FlightBookPage() {
   return (
     <Suspense fallback={<LoadingState />}>
       <GuestGuard>
         <RequireAuth roles={["user"]}>
-          <BookContent />
+          <KeyedBook />
         </RequireAuth>
       </GuestGuard>
     </Suspense>

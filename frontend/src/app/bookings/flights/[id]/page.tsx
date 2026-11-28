@@ -3,6 +3,7 @@
 import { Suspense, useState } from "react";
 import { useParams } from "next/navigation";
 import { CancelBooking } from "@/components/flights/cancel-booking";
+import { ChangeBooking, ChangeBookingButton } from "@/components/flights/change-booking";
 import { TYPE_LABEL } from "@/components/flights/passenger-fields";
 import { useZoneOf } from "@/components/flights/use-zone-of";
 import { FormErrors } from "@/components/form-errors";
@@ -10,7 +11,10 @@ import { Alert, ButtonLink, Card, CardTitle, EmptyState, LoadingState, StatusBad
 import { buttonClasses } from "@/components/ui/button";
 import { formatDateTime, formatLocalTime, formatMoney } from "@/lib/format";
 import { useApi } from "@/lib/use-api";
-import type { CancelResult, FlightBooking } from "@/lib/types-flights";
+import {
+  changePaymentHref, hasDeparted, canChange,
+  type CancelResult, type ChangeResult, type FlightBooking,
+} from "@/lib/types-flights";
 
 function DetailsContent() {
   const { id } = useParams<{ id: string }>();
@@ -18,6 +22,7 @@ function DetailsContent() {
   const zoneOf = useZoneOf();
   const [now] = useState(() => Date.now());
   const [result, setResult] = useState<CancelResult | null>(null);
+  const [changed, setChanged] = useState<ChangeResult | null>(null);
 
   const { data: b, errors, loading, reload } = useApi<FlightBooking>(`/flight-bookings/${bookingId}`);
 
@@ -29,9 +34,16 @@ function DetailsContent() {
 
   const holdActive = !!b.holdExpiresAt && new Date(b.holdExpiresAt).getTime() > now;
   const canDownload = b.status === "CONFIRMED" || b.status === "COMPLETED";
+  const pc = b.status === "CONFIRMED" ? b.pendingChange : null;
+  const pcActive = !!pc && pc.status === "PENDING_PAYMENT" && (!pc.expiresAt || new Date(pc.expiresAt).getTime() > now);
+  const canCancel = b.status === "CONFIRMED" && !b.pendingChange && !hasDeparted(b, now);
 
   return (
     <div className="space-y-4">
+      <div>
+        <ButtonLink href="/bookings/flights" variant="ghost" size="sm">← Back to my bookings</ButtonLink>
+      </div>
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="font-display text-2xl">{b.reference ?? "Booking"}</h2>
         <StatusBadge status={b.status} />
@@ -66,6 +78,35 @@ function DetailsContent() {
         <Alert tone="success" title="Booking cancelled">
           <p>Refund of {formatMoney(result.refundAmount, result.currency)} ({result.refundPercent}%) is on its way.</p>
           {/* TODO: <RefundStatus type="flight" id={id} /> from Member 6 (components/payments/refund-status.tsx, merged Dec 4) */}
+        </Alert>
+      )}
+
+      {pc && pcActive && (
+        <Alert tone="info" title="Flight change waiting for payment">
+          <p>
+            Pay the fare difference of {formatMoney(pc.fareDifference, b.currency)}
+            {pc.expiresAt ? ` before ${formatDateTime(pc.expiresAt)}` : ""} to complete the change.
+            Your original flights stay booked until then.
+          </p>
+          <div className="mt-3">
+            <ButtonLink href={changePaymentHref(b._id, pc.changeId)}>Pay fare difference</ButtonLink>
+          </div>
+        </Alert>
+      )}
+      {pc && !pcActive && (
+        <Alert tone="warning" title="Flight change expired">
+          <p>The payment time ran out. The new seats are being released and your original flights are unchanged.</p>
+        </Alert>
+      )}
+      {changed?.status === "COMPLETED" && (
+        <Alert tone="success" title="Flights changed">
+          <p>
+            Your booking now has the new flights.
+            {changed.refundDue > 0
+              ? ` A refund of ${formatMoney(changed.refundDue, changed.currency)} is on its way.`
+              : " No extra cost."}
+          </p>
+          {/* TODO: <RefundStatus type="flight" id={id} /> from Member 6 (when refundDue > 0) */}
         </Alert>
       )}
 
@@ -111,20 +152,33 @@ function DetailsContent() {
         </div>
       </Card>
 
-      <div className="flex flex-wrap items-center gap-3">
-        {canDownload && (
-          <a href={`/api/flight-bookings/${b._id}/e-ticket`} className={buttonClasses("primary", "md", "")}>
-            Download e-ticket
-          </a>
-        )}
-        <ButtonLink href="/bookings/flights" variant="outline">Back to my bookings</ButtonLink>
-      </div>
+      {(canDownload || canChange(b, now)) && (
+        <div className="flex flex-wrap items-center gap-3">
+          {canDownload && (
+            <a href={`/api/flight-bookings/${b._id}/e-ticket`} className={buttonClasses("primary", "md", "")}>
+              Download e-ticket
+            </a>
+          )}
+          <ChangeBookingButton booking={b} now={now} />
+        </div>
+      )}
 
-      <CancelBooking
+      <ChangeBooking
         booking={b}
         now={now}
-        onCancelled={(r) => { setResult(r); reload(); }}
+        zoneOf={zoneOf}
+        onChanged={(r) => { setChanged(r); reload(); }}
       />
+
+      {canCancel && (
+        <div className="border-t border-sand pt-4">
+          <CancelBooking
+            booking={b}
+            now={now}
+            onCancelled={(r) => { setResult(r); reload(); }}
+          />
+        </div>
+      )}
     </div>
   );
 }
